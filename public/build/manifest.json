@@ -1,0 +1,130 @@
+{
+  "node_modules/bootstrap-icons/font/fonts/bootstrap-icons.woff": {
+    "file": "assets/bootstrap-icons-BOrJxbIo.woff",
+    "src": "node_modules/bootstrap-icons/font/fonts/bootstrap-icons.woff"
+  },
+  "node_modules/bootstrap-icons/font/fonts/bootstrap-icons.woff2": {
+    "file": "assets/bootstrap-icons-BtvjY1KL.woff2",
+    "src": "node_modules/bootstrap-icons/font/fonts/bootstrap-icons.woff2"
+  },
+  "resources/css/app.css": {
+    "file": "assets/app-CS1UbG2X.css",
+    "src": "resources/css/app.css",
+    "isEntry": true
+  },
+  "resources/css/style.css": {
+    "file": "assets/style-DOhNDtbp.css",
+    "src": "resources/css/style.css",
+    "isEntry": true
+  },
+  "resources/css/vendors/css/vendor.bundle.base.css": {
+    "file": "assets/vendor.bundle-SvkcpJEK.css",
+    "src": "resources/css/vendors/css/vendor.bundle.base.css",
+    "isEntry": true
+  },
+  "resources/fonts/Ubuntu/Ubuntu-Bold.eot": {
+    "file": "assets/Ubuntu-Bold-DDWmukTN.eot",
+    "src": "resources/fonts/Ubuntu/Ubuntu-Bold.eot"
+  },
+  "resources/fonts/Ubuntu/Ubuntu-Bold.ttf": {
+    "file": "assets/Ubuntu-Bold-wWLizdLX.ttf",
+    "src": "resources/fonts/Ubuntu/Ubuntu-Bold.ttf"
+  },
+  "resources/fonts/Ubuntu/Ubuntu-Bold.woff": {
+    "file": "assets/Ubuntu-Bold-zFMhMwsA.woff",
+    "src": "resources/fonts/Ubuntu/Ubuntu-Bold.woff"
+  },
+  "resources/fonts/Ubuntu/Ubuntu-Bold.woff2": {
+    "file": "assets/Ubuntu-Bold-BoDVDFUW.woff2",
+    "src": "resources/fonts/Ubuntu/Ubuntu-Bold.woff2"
+  },
+  "resources/fonts/Ubuntu/Ubuntu-Light.eot": {
+    "file": "assets/Ubuntu-Light-V4UnhGx2.eot",
+    "src": "resources/fonts/Ubuntu/Ubuntu-Light.eot"
+  },
+  "resources/fonts/Ubuntu/Ubuntu-Light.ttf": {
+    "file": "assets/Ubuntu-Light-Cg7l7Wr2.ttf",
+    "src": "resources/fonts/Ubuntu/Ubuntu-Light.ttf"
+  },
+  "resources/fonts/Ubuntu/Ubuntu-Light.woff": {
+    "file": "assets/Ubuntu-Light-CXXHRX4n.woff",
+    "src": "resources/fonts/Ubuntu/Ubuntu-Light.woff"
+  },
+  "resources/fonts/Ubuntu/Ubuntu-Light.woff2": {
+    "file": "assets/Ubuntu-Light-CipUByEf.woff2",
+    "src": "resources/fonts/Ubuntu/Ubuntu-Light.woff2"
+  },
+  "resources/fonts/Ubuntu/Ubuntu-Medium.eot": {
+    "file": "assets/Ubuntu-Medium-BDDyiLH7.eot",
+    "src": "resources/fonts/Ubuntu/Ubuntu-Medium.eot"
+  },
+  "resources/fonts/Ubuntu/Ubuntu-Medium.ttf": {
+    "file": "assets/Ubuntu-Medium-DT9uYR1m.ttf",
+    "src": "resources/fonts/Ubuntu/Ubuntu-Medium.ttf"
+  },
+  "resources/fonts/Ubuntu/Ubuntu-Medium.woff": {
+    "file": "assets/Ubuntu-Medium-KceFo89I.woff",
+    "src": "resources/fonts/Ubuntu/Ubuntu-Medium.woff"
+  },
+  "resources/fonts/Ubuntu/Ubuntu-Medium.woff2": {
+    "file": "assets/Ubuntu-Medium-PFuhnRcx.woff2",
+    "src": "resources/fonts/Ubuntu/Ubuntu-Medium.woff2"
+  },
+  "resources/fonts/Ubuntu/Ubuntu-Regular.eot": {
+    "file": "assets/Ubuntu-Regular-BGDTdKbL.eot",
+    "src": "resources/fonts/Ubuntu/Ubuntu-Regular.eot"
+  },
+  "resources/fonts/Ubuntu/Ubuntu-Regular.ttf": {
+    "file": "assets/Ubuntu-Regular-DIySXyoV.ttf",
+    "src": "resources/fonts/Ubuntu/Ubuntu-Regular.ttf"
+  },
+  "resources/fonts/Ubuntu/Ubuntu-Regular.woff": {
+    "file": "assets/Ubuntu-Regular-CsrfK87R.woff",
+    "src": "resources/fonts/Ubuntu/Ubuntu-Regular.woff"
+  },
+  "resources/fonts/Ubuntu/Ubuntu-Regular.woff2": {
+    "file": "assets/Ubuntu-Regular-BqkZp2pX.woff2",
+    "src": "resources/fonts/Ubuntu/Ubuntu-Regular.woff2"
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-62TGdwzq.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true
+  },
+  "resources/js/file-upload.js": {
+    "file": "assets/file-upload-C7v9bOVC.js",
+    "name": "file-upload",
+    "src": "resources/js/file-upload.js",
+    "isEntry": true
+  },
+  "resources/js/hoverable-collapse.js": {
+    "file": "assets/hoverable-collapse-DteMtBOp.js",
+    "name": "hoverable-collapse",
+    "src": "resources/js/hoverable-collapse.js",
+    "isEntry": true
+  },
+  "resources/js/jquery.cookie.js": {
+    "file": "assets/jquery.cookie-CNKRPtQC.js",
+    "name": "jquery.cookie",
+    "src": "resources/js/jquery.cookie.js",
+    "isEntry": true
+  },
+  "resources/js/misc.js": {
+    "file": "assets/misc-CW53Q3CZ.js",
+    "name": "misc",
+    "src": "resources/js/misc.js",
+    "isEntry": true
+  },
+  "resources/js/off-canvas.js": {
+    "file": "assets/off-canvas-CKLErR7l.js",
+    "name": "off-canvas",
+    "src": "resources/js/off-canvas.js",
+    "isEntry": true
+  },
+  "resources/sass/app.scss": {
+    "file": "assets/app-B6uUTwh-.css",
+    "src": "resources/sass/app.scss",
+    "isEntry": true
+  }
+}

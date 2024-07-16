@@ -1,0 +1,1 @@
+(function(n){n(function(){n(".file-upload-browse").on("click",function(){var i=n(this).parent().parent().parent().find(".file-upload-default");i.trigger("click")}),n(".file-upload-default").on("change",function(){n(this).parent().find(".form-control").val(n(this).val().replace(/C:\\fakepath\\/i,""))})})})($);
