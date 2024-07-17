@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\DataTables\ServiceDataTable;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Models\ServicePrice;
 use App\Models\Service;
 
 class ServiceController extends Controller
@@ -40,9 +41,13 @@ class ServiceController extends Controller
         }
         $service->position = 1;
         $service->description = $request->description;
-        $service->price = $request->price;
         $service->status = $request->status;
         if($service->save()){
+            if(count($request->shift)>0){
+                foreach($request->shift as $key=>$value){
+                    ServicePrice::create(['service_id'=>$service->id,'shift'=>$value,'price'=>$request['price'][$key]]);
+                }
+            }
             return redirect()->route('service.index')->with(['alert'=>'success','message'=>'New Service has been created.']);
         }
         else{
@@ -56,7 +61,7 @@ class ServiceController extends Controller
     public function show(string $id)
     {
         $services = Service::where('parent_id','=',0)->orderBy('id','desc')->get();
-        $service = Service::findOrFail($id);
+        $service = Service::with('service_prices')->findOrFail($id);
         if(!is_null($service->image)){
             $url = \Storage::url($service->image);
             $service->imageLink =  asset($url);
@@ -73,7 +78,7 @@ class ServiceController extends Controller
     public function edit(string $id)
     {
         $services = Service::where('parent_id','=',0)->orderBy('id','desc')->get();
-        $service = Service::findOrFail($id);
+        $service = Service::with('service_prices')->findOrFail($id);
         if(!is_null($service->image)){
             $url = \Storage::url($service->image);
             $service->imageLink =  asset($url);
@@ -102,9 +107,13 @@ class ServiceController extends Controller
         }
         $service->position = 1;
         $service->description = $request->description;
-        $service->price = $request->price;
         $service->status = $request->status;
         if($service->save()){
+            if(count($request->shift)>0){
+                foreach($request->shift as $key=>$value){
+                    ServicePrice::updateOrCreate(['service_id'=>$service->id,'shift'=>$value],['price'=>$request['price'][$key]]);
+                }
+            }
             return redirect()->route('service.index')->with(['alert'=>'success','message'=>'Service has been updated.']);
         }
         else{

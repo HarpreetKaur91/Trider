@@ -31,13 +31,21 @@
               </div>
               <div class="form-group">
                 <label for="description">Description(optional)</label>
-                <input type="text" class="form-control" id="description" name="description" placeholder="Enter Description" value="{{old('description',$service->description)}}" required>
+                <input type="text" class="form-control" id="description" name="description" placeholder="Enter Description" value="{{old('description',$service->description)}}">
               </div>
-              <div class="form-group">
-                <label for="price">Price<span class="text-danger">*</span></label>
-                <input type="text" class="form-control" id="price" pattern="^\d{0,8}(\.\d{1,4})?$" name="price" placeholder="Enter Service Price" value="{{old('price',$service->price)}}" required>
-                <x-input-error :messages="$errors->get('price')" class="mt-2" />
-              </div>
+                <div class="row">
+                    @foreach($service->service_prices as $value)
+                        <div class="form-group col-md-6">
+                            @if($value->shift == 1)
+                            <label for="price">Overtime Price Per Hour<span class="text-danger">*</span></label>
+                            @else
+                            <label for="price">{{ $value->shift }} Hours Price<span class="text-danger">*</span></label>
+                            @endif
+                            <input type="hidden" value="{{ $value->shift }}" name="shift[]">
+                            <input type="text" class="form-control" id="price" pattern="^\d{0,8}(\.\d{1,4})?$" name="price[]" placeholder="Enter Service Price" value="{{$value->price}}" required>
+                        </div>
+                    @endforeach
+                </div>
               <div class="form-group">
                 <label for="image">Image<span class="text-danger">*</span></label>
                 <input type="file" class="form-control" placeholder="Upload Image" name="image" accept="image/*">

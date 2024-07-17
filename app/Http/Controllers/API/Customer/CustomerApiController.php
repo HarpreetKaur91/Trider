@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\API;
+namespace App\Http\Controllers\API\Customer;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Controllers\Controller;
 use App\Models\FavouriteProvider;
@@ -50,7 +50,7 @@ class CustomerApiController extends Controller
                     return response()->json(['success'=>false,'message'=>$validator->errors()->first()],400);
                 }
                 $request['user_id'] = $request->user()->id;
-                $provider = User::whereHas('roles',function($q){ $q->where('role_name','provider'); })->find($request->provider_id);
+                $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->find($request->provider_id);
                 if(!is_null($provider)){
                     $is_already_exists = FavouriteProvider::where('user_id',$request->user_id)->where('provider_id',$provider->id)->first();
                     if(!is_null($is_already_exists)){
@@ -70,13 +70,13 @@ class CustomerApiController extends Controller
             {
                 return response()->json(['success'=>false,'message'=>'Invalid Method.']);
             }
-               
+
         }
         catch(\Exception $e){
             $array = ['request'=>'favourite provider api','message'=>$e->getMessage()];
             \Log::info($array);
             return response()->json(['success'=>false,'message'=>$e->getMessage()]);
-        }   
+        }
     }
 
     // Top Rated Providers
@@ -85,16 +85,16 @@ class CustomerApiController extends Controller
         try{
             if($request->filled('param')):
                 if($request->param == "top_rated"):
-                    $providers = User::whereHas('roles',function($q){ $q->where('role_name','provider'); })->paginate(25);
+                    $providers = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->paginate(25);
                     $providers->makeHidden(['created_at','updated_at','report_status','account_status','status','email_verified_at','phone_number_code','phone_number_expired_at']);
                 endif;
                 if($request->param == "search"):
                     $search = $request->search_value;
-                    $providers = User::whereHas('roles',function($q){ $q->where('role_name','provider'); })->where('name','LIKE',"%{$search}%")->orderBy('id','desc')->select('id','name','image','phone_number')->paginate(25);
+                    $providers = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->where('name','LIKE',"%{$search}%")->orderBy('id','desc')->select('id','name','image','phone_number')->paginate(25);
                 endif;
             endif;
             if(!isset($request->param)):
-                $providers = User::whereHas('roles',function($q){ $q->where('role_name','provider'); })->orderBy('id','desc')->select('id','name','image','phone_number')->paginate(25);
+                $providers = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->orderBy('id','desc')->select('id','name','image','phone_number')->paginate(25);
             endif;
             if(count($providers)>0):
                 foreach($providers as $provider){
@@ -134,7 +134,7 @@ class CustomerApiController extends Controller
     {
         try{
             $userId = $request->user()->id;
-            $provider = User::with(['provider_services','provider_reviews'])->whereHas('roles',function($q){ $q->where('role_name','provider'); })->find($providerId);
+            $provider = User::with(['provider_services','provider_reviews'])->whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->find($providerId);
             if(!is_null($provider)){
                 if(!is_null($provider->image)){
                     $url = \Storage::url($provider->image);
@@ -173,13 +173,13 @@ class CustomerApiController extends Controller
         }
     }
 
-    // Get Provider Reviews 
+    // Get Provider Reviews
     public function getProviderReview(Request $request,$providerId)
     {
         try
         {
             $userId = $request->user()->id;
-            $provider = User::whereHas('roles',function($q){ $q->where('role_name','provider'); })->find($providerId);
+            $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->find($providerId);
             if(!is_null($provider)){
                 $reviews = ProviderReview::where('provider_id',$provider->id)->get();
                 if(count($reviews)>0){
@@ -224,13 +224,13 @@ class CustomerApiController extends Controller
                     'rating' => 'required|integer|between:1,5',
                     'comment' => 'required'
                 ]);
-                if ($validator->fails()) 
+                if ($validator->fails())
                 {
                     return response()->json(['success' => false,'message' => $validator->errors()->first()]);
                 }
                 else
                 {
-                    $provider = User::whereHas('roles',function($q){ $q->where('role_name','provider'); })->find($request->provider_id);
+                    $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->find($request->provider_id);
                     if(!is_null($provider)):
                         $request['user_id'] = $user->id;
                         ProviderReview::updateOrCreate(['provider_id'=>$provider->id,'user_id'=>$user->id],['rating'=>$request->rating,'comment'=>$request->comment]);
@@ -238,7 +238,7 @@ class CustomerApiController extends Controller
                     else:
                         return response()->json(['success'=>false,'message'=>'The selected provider is not found']);
                     endif;
-                }      
+                }
             }
             else
             {

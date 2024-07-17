@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\API;
+namespace App\Http\Controllers\API\Customer;
 
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Mail;
@@ -17,7 +17,7 @@ use Auth;
 
 class CustomerAuthController extends Controller
 {
-    // twilio function 
+    // twilio function
     private function sendMessage($message, $recipients)
     {
         $account_sid = getenv("TWILIO_SID");
@@ -61,10 +61,10 @@ class CustomerAuthController extends Controller
 
                         //$this->sendMessage($message, $user->phone_number);
                         //$generate_token = $user->createToken('OneTap_'.$user->id)->plainTextToken;
-                        
+
                         $role = Role::where('role_name','user')->first();
                         $user->roles()->attach($role);
-                        
+
                         FirebaseNotification::updateOrCreate(['user_id'=>$user->id,'udid'=>$request->udid],['firebase_token'=>$request->firebase_token,'device_type'=>$request->device_type]);
 
                         return response()->json([
@@ -124,14 +124,14 @@ class CustomerAuthController extends Controller
             $array = ['request'=>'user verify otp','message'=>$e->getMessage()];
             \Log::info($array);
             return response()->json(['sucsess'=>false,'message'=>$e->getMessage()]);
-        } 
+        }
     }
 
-    // login 
+    // login
     public function login(Request $request){
         $rules = ['email'=>'required|email','password'=>'required','device_type' => 'required|in:android,ios','firebase_token' => 'required','udid'=>'required'];
         $validator = Validator::make($request->all(), $rules);
-        if ($validator->fails()) 
+        if ($validator->fails())
         {
           return response()->json(['status' => false,'message' => $validator->errors()->first()]);
         }
@@ -146,9 +146,9 @@ class CustomerAuthController extends Controller
                         $user->save();
 
                         FirebaseNotification::updateOrCreate(['user_id'=>$user->id,'udid'=>$request->udid],['firebase_token'=>$request->firebase_token,'device_type'=>$request->device_type]);
-                        
+
                         $generate_token = $user->createToken('OneTap_'.$user->id)->plainTextToken;
-                        
+
                         return response()->json([
                             'status'=>2,
                             'success' => true,
@@ -238,7 +238,7 @@ class CustomerAuthController extends Controller
             \Log::info($array);
             return response()->json(['sucsess'=>false,'message'=>$e->getMessage()]);
         }
-        
+
     }
 
     // Verify OTP
@@ -271,7 +271,7 @@ class CustomerAuthController extends Controller
             \Log::info($array);
             return response()->json(['sucsess'=>false,'message'=>$e->getMessage()]);
         }
-        
+
     }
 
     // Reset Password
@@ -301,7 +301,7 @@ class CustomerAuthController extends Controller
             \Log::info($array);
             return response()->json(['sucsess'=>false,'message'=>$e->getMessage()]);
         }
-        
+
     }
 
     // Change Password
@@ -347,7 +347,7 @@ class CustomerAuthController extends Controller
                 $user->save();
 
                 $request->user()->tokens()->delete();
-                
+
                 return response()->json(['sucsess'=>true,'message'=>"You have been logged out!."]);
             else:
                 return response()->json(['sucsess'=>false,'message'=>'User not found']);

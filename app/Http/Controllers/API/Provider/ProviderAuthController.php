@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\API;
+namespace App\Http\Controllers\API\Provider;
 
 use Illuminate\Support\Facades\Validator;
 use App\Models\ProviderBusinessProfile;
@@ -32,12 +32,28 @@ class ProviderAuthController extends Controller
         // $client->messages->create($recipients, ['from' => $twilio_number, 'body' => $message]);
     }
 
+    // All Company List
+    public function getCompanyList(){
+        $companies = User::whereHas('roles',function($q){ $q->where('role_name','company'); })->select('id','name')->get();
+        if(count($companies)>0){
+            return response()->json([
+                'success' => true,
+                'message' => 'List of all companies',
+                'response' => $companies
+            ]);
+        }
+        else
+        {
+            return response()->json(['sucsess'=>false,'message'=>'No Company found.']);
+        }
+    }
     // Register
     public function register(Request $request){
         $validator = Validator::make($request->all(), [
             'email' => 'required|email',
             'password' => 'required',
             'provider_type' => 'required|in:employee,freelancer',
+            'company_id' => 'required_if:provider_type,==,employee',
             //'phone_number' => 'required|regex:/^([0-9\s\-\+\(\)]*)$/|min:10|unique:users,phone_number',
             'device_type' => 'required|in:android,ios',
             'firebase_token' => 'required',
@@ -48,7 +64,14 @@ class ProviderAuthController extends Controller
         }
         else{
             try{
-                $checkEmail = User::where('email',$request->email)->where('role','provider')->first();
+                if(($request->provider_type == "employee") && ($request->has('company_id'))){
+                    $company = User::whereHas('roles',function($q){ $q->where('role_name','company'); })->find($request->company_id);
+                    if(is_null($company)){
+                        return response()->json(['sucsess'=>false,'message'=>'Company not found.'],400);
+                    }
+                }
+
+                $checkEmail = User::where('email',$request->email)->whereIn('role',['employee','freelancer'])->first();
                 if(is_null($checkEmail)){
                     $name = explode('@',$request->email);
                     $provider = new User;
@@ -60,6 +83,9 @@ class ProviderAuthController extends Controller
                     // $provider->phone_number_code = mt_rand(1000,9999);
                     $provider->role = $request->provider_type;
                     $provider->status = 0;
+                    if(($request->provider_type == "employee") && ($request->has('company_id'))){
+                        $provider->company_id = $company->id;
+                    }
                     if($provider->save())
                     {
                         //$message = "Please Verify Your Account. Your OTP is ".$provider->phone_number_code;
@@ -99,13 +125,13 @@ class ProviderAuthController extends Controller
     // Verify Phone Number OTP
     public function verifyPhoneNumberOtp(Request $request)
     {
-        $validator = Validator::make($request->all(), ['otp'=>'required|numeric','provider_id'=>'required|integer','provider_type' => 'required|in:employee,freelancer',]);
+        $validator = Validator::make($request->all(), ['otp'=>'required|numeric','provider_id'=>'required|integer']);
         if ($validator->fails()):
           return response()->json(['sucsess' => false,'message' => $validator->errors()->first()]);
         endif;
 
         try{
-            $provider = User::whereHas('roles',function($q){ $q->where('role_name',$request->provider_type); })->find($request->provider_id);
+            $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->find($request->provider_id);
             if(!is_null($provider)):
               if($provider->phone_number_code == $request->otp)
               {
@@ -134,7 +160,7 @@ class ProviderAuthController extends Controller
 
     // login
     public function login(Request $request){
-        $rules = ['email'=>'required|email','password'=>'required','device_type' => 'required|in:android,ios','firebase_token' => 'required','udid'=>'required','provider_type' => 'required|in:employee,freelancer'];
+        $rules = ['email'=>'required|email','password'=>'required','device_type' => 'required|in:android,ios','firebase_token' => 'required','udid'=>'required'];
         $validator = Validator::make($request->all(), $rules);
         if ($validator->fails())
         {
@@ -143,8 +169,8 @@ class ProviderAuthController extends Controller
         else
         {
             try{
-                if(Auth::attempt(['email' => $request->email, 'password' => $request->password,'role'=>'provider'])):
-                $provider = User::whereHas('roles',function($q){ $q->where('role_name',$request->provider_type); })->find(auth()->user()->id);
+                if(Auth::attempt(['email' => $request->email, 'password' => $request->password])):
+                $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->find(auth()->user()->id);
                     if(!is_null($provider)):
 
                         $provider->status = 1;
@@ -188,13 +214,13 @@ class ProviderAuthController extends Controller
     // Forget Password
     public function forgot_password(Request $request)
     {
-        $validator = Validator::make($request->all(), ['email'=>'required|email','provider_type' => 'required|in:employee,freelancer']);
+        $validator = Validator::make($request->all(), ['email'=>'required|email']);
         if ($validator->fails()):
           return response()->json(['success' => false,'message' => $validator->errors()->first()]);
         endif;
 
         try{
-            $provider = User::whereHas('roles',function($q){ $q->where('role_name',$request->provider_type); })->where('email',$request->email)->first();
+            $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->where('email',$request->email)->first();
             if(!is_null($provider)):
                 $otp = Otp::whereUserId($provider->id)->first();
                 if(!is_null($otp)):
@@ -249,13 +275,13 @@ class ProviderAuthController extends Controller
     // Verify OTP
     public function verify_otp(Request $request)
     {
-        $validator = Validator::make($request->all(), ['otp'=>'required|numeric','provider_id'=>'required|integer','provider_type' => 'required|in:employee,freelancer']);
+        $validator = Validator::make($request->all(), ['otp'=>'required|numeric','provider_id'=>'required|integer']);
         if ($validator->fails()):
           return response()->json(['sucsess' => false,'message' => $validator->errors()->first()]);
         endif;
 
         try{
-            $provider = User::whereHas('roles',function($q){ $q->where('role_name',$request->provider_type); })->find($request->provider_id);
+            $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->find($request->provider_id);
             if(!is_null($provider)):
               $otp = Otp::whereCode($request->otp)->whereUserId($provider->id)->first();
               if(!is_null($otp)):
@@ -282,12 +308,12 @@ class ProviderAuthController extends Controller
     // Reset Password
     public function reset_password(Request $request)
     {
-        $validator = Validator::make($request->all(), ['provider_id'=>'required|integer','password'=>'required|string|confirmed','provider_type' => 'required|in:employee,freelancer']);
+        $validator = Validator::make($request->all(), ['provider_id'=>'required|integer','password'=>'required|string|confirmed']);
         if ($validator->fails()):
           return response()->json(['sucsess' => false,'message' => $validator->errors()->first()]);
         endif;
         try{
-            $provider = User::whereHas('roles',function($q){ $q->where('role_name',$request->provider_type); })->find($request->provider_id);
+            $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->find($request->provider_id);
             if(!is_null($provider)):
                 $password = \Hash::make($request->password);
                 $provider->password = $password;
@@ -313,11 +339,11 @@ class ProviderAuthController extends Controller
     public function change_password(Request $request)
     {
         try{
-            $validator = Validator::make($request->all(), ['old_password'=>'required','password'=>'required|string|min:6|confirmed','provider_type' => 'required|in:employee,freelancer']);
+            $validator = Validator::make($request->all(), ['old_password'=>'required','password'=>'required|string|min:6|confirmed']);
             if ($validator->fails()):
                 return response()->json(['success' => false,'message' => $validator->errors()->first()]);
             endif;
-            $provider = User::whereHas('roles',function($q){ $q->where('role_name',$request->provider_type); })->find($request->user()->id);
+            $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->find($request->user()->id);
             if(!is_null($provider)):
                 $password = \Hash::make($request->password);
                 if(\Hash::check($request->old_password,$provider->password)):
@@ -345,11 +371,7 @@ class ProviderAuthController extends Controller
     public function logout(Request $request)
     {
         try{
-            $validator = Validator::make($request->all(), ['provider_type' => 'required|in:employee,freelancer']);
-            if ($validator->fails()):
-                return response()->json(['success' => false,'message' => $validator->errors()->first()]);
-            endif;
-            $provider = User::whereHas('roles',function($q){ $q->where('role_name',$request->provider_type); })->find($request->user()->id);
+            $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->find($request->user()->id);
             if(!is_null($provider)):
 
                 $provider->status = 0;
@@ -374,11 +396,7 @@ class ProviderAuthController extends Controller
     public function provider_profile(Request $request)
     {
         try{
-            $validator = Validator::make($request->all(), ['provider_type' => 'required|in:employee,freelancer']);
-            if ($validator->fails()):
-                return response()->json(['success' => false,'message' => $validator->errors()->first()]);
-            endif;
-            $provider = User::whereHas('roles',function($q){ $q->where('role_name',$request->provider_type); })->select('id','email','name','phone_number','image')->find($request->user()->id);
+            $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->select('id','email','name','phone_number','image')->find($request->user()->id);
             if(!is_null($provider)){
                 if(!is_null($provider['image'])){
                     $url = \Storage::url($provider['image']);
@@ -467,6 +485,8 @@ class ProviderAuthController extends Controller
                 'business_phone_no' => 'required|unique:provider_business_profiles,business_phone_no',
                 'year_of_exp' => 'required',
                 'days_of_availability' => 'required|array',
+                'provider_type' => 'required|in:employee,freelancer',
+                'company_id' => 'required_if:provider_type,==,employee',
             ]);
 
             if ($validator->fails()) {

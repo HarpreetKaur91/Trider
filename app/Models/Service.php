@@ -21,5 +21,7 @@ class Service extends Model
         return $this->hasMany(self::class,'parent_id','id')->select('id','parent_id','name','description','image');
     }
 
-
+    public function service_prices(){
+        return $this->hasMany('App\Models\ServicePrice')->select('id','service_id','shift','price');
+    }
 }

@@ -28,13 +28,40 @@
               </div>
               <div class="form-group">
                 <label for="description">Description(optional)</label>
-                <input type="text" class="form-control" id="description" name="description" placeholder="Enter Description" value="{{old('description')}}" required>
+                <input type="text" class="form-control" id="description" name="description" placeholder="Enter Description" value="{{old('description')}}">
               </div>
-              <div class="form-group">
-                <label for="price">Price<span class="text-danger">*</span></label>
-                <input type="text" class="form-control" id="price" pattern="^\d{0,8}(\.\d{1,4})?$" name="price" placeholder="Enter Service Price" value="{{old('price')}}" required>
-                <x-input-error :messages="$errors->get('price')" class="mt-2" />
-              </div>
+              {{--  <div class="form-group">
+                <label for="shift">Select Shift<span class="text-danger">*</span></label>
+                <select name="shift" class="form-control" required>
+                    <option value="3 hours">3 Hours</option>
+                    <option value="6 hours">6 Hours</option>
+                    <option value="9 hours">9 Hours</option>
+                    <option value="overtime">Overtime</option>
+                </select>
+                <x-input-error :messages="$errors->get('shift')" class="mt-2" />
+              </div>  --}}
+                <div class="row">
+                    <div class="form-group col-md-6">
+                        <label for="price">3 Hours Price<span class="text-danger">*</span></label>
+                        <input type="hidden" value="3" name="shift[]">
+                        <input type="text" class="form-control" id="price" pattern="^\d{0,8}(\.\d{1,4})?$" name="price[]" placeholder="Enter Service Price" value="{{old('price')}}" required>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label for="price">6 Hours Price<span class="text-danger">*</span></label>
+                        <input type="hidden" value="6" name="shift[]">
+                        <input type="text" class="form-control" id="price" pattern="^\d{0,8}(\.\d{1,4})?$" name="price[]" placeholder="Enter Service Price" value="{{old('price')}}" required>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label for="price">9 Hours Price<span class="text-danger">*</span></label>
+                        <input type="hidden" value="9" name="shift[]">
+                        <input type="text" class="form-control" id="price" pattern="^\d{0,8}(\.\d{1,4})?$" name="price[]" placeholder="Enter Service Price" value="{{old('price')}}" required>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label for="price">Overtime Price Per Hour<span class="text-danger">*</span></label>
+                        <input type="hidden" value="1" name="shift[]">
+                        <input type="text" class="form-control" id="price" pattern="^\d{0,8}(\.\d{1,4})?$" name="price[]" placeholder="Enter Service Price" value="{{old('price')}}" required>
+                    </div>
+                </div>
               <div class="form-group">
                 <label for="image">Image<span class="text-danger">*</span></label>
                 <input type="file" class="form-control" placeholder="Upload Image" name="image" accept="image/*" required>

@@ -1,8 +1,8 @@
 <x-app-layout>
-    
-    <x-slot name="header"> 
+
+    <x-slot name="header">
         <h3 class="page-title">
-            <span class="page-title-icon bg-gradient-primary text-white me-2"><i class="bi bi-grid-fill"></i> </span> 
+            <span class="page-title-icon bg-gradient-primary text-white me-2"><i class="bi bi-grid-fill"></i> </span>
             {{ __('Services') }}
         </h3>
         <x-slot name="breadcrumb">
@@ -14,7 +14,7 @@
               </nav>
         </x-slot>
     </x-slot>
-    
+
     <div class="row">
         <div class="col-lg-12 grid-margin stretch-card">
             <div class="card">

@@ -2,9 +2,10 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\API\ProviderAuthController;
-use App\Http\Controllers\API\CustomerAuthController;
-use App\Http\Controllers\API\CustomerApiController;
+use App\Http\Controllers\API\Provider\ProviderAuthController;
+use App\Http\Controllers\API\Customer\CustomerAuthController;
+use App\Http\Controllers\API\Customer\CustomerApiController;
+use App\Http\Controllers\API\Company\CompanyAuthController;
 use App\Http\Controllers\API\CommonAPIController;
 
 Route::controller(CommonAPIController::class)->group(function(){
@@ -26,6 +27,7 @@ Route::group(['prefix'=>'provider'],function()
         Route::post('login','login');
         Route::post('register','register');
         Route::post('verifyOtp','verify_otp');
+        Route::get('getCompanyList','getCompanyList');
         Route::post('resetPassword','reset_password');
         Route::post('forgotPassword','forgot_password');
         Route::post('verifyPhoneNumberOtp','verifyPhoneNumberOtp');
@@ -43,6 +45,27 @@ Route::group(['prefix'=>'provider'],function()
             Route::post('providerBusinessAddress','providerBusinessAddress');
 
             Route::match(['get','post'],'bank-detail','bank_detail');
+        });
+    });
+});
+
+Route::group(['prefix'=>'company'],function()
+{
+    Route::controller(CompanyAuthController::class)->group(function(){
+        Route::post('login','login');
+        Route::post('register','register');
+        Route::post('verifyOtp','verify_otp');
+        Route::post('resetPassword','reset_password');
+        Route::post('forgotPassword','forgot_password');
+        Route::post('verifyPhoneNumberOtp','verifyPhoneNumberOtp');
+    });
+
+    Route::middleware('auth:sanctum')->group(function(){
+        Route::controller(CompanyAuthController::class)->group(function(){
+            Route::post('logout','logout');
+            Route::post('edit-profile','edit_profile');
+            Route::post('changePassword','change_password');
+            Route::get('company-profile','company_profile');
         });
     });
 });
