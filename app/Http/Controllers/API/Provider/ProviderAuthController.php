@@ -488,7 +488,7 @@ class ProviderAuthController extends Controller
                     'year_of_exp' => 'required',
                     'days_of_availability' => 'required|array',
                     'user_type' => 'required|in:employee,freelancer',
-                    'company_id' => 'required_if:provider_type,==,employee',
+                    'company_id' => 'required_if:user_type,==,employee',
                 ]);
 
                 if ($validator->fails()) {
@@ -498,7 +498,7 @@ class ProviderAuthController extends Controller
                 else{
                     try{
 
-                        if(($request->provider_type == "employee") && ($request->has('company_id'))){
+                        if(($request->user_type == "employee") && ($request->has('company_id'))){
                             $company = User::whereHas('roles',function($q){ $q->where('role_name','company'); })->find($request->company_id);
                             if(is_null($company)){
                                 return response()->json(['sucsess'=>false,'message'=>'Company not found.'],400);
@@ -513,7 +513,7 @@ class ProviderAuthController extends Controller
                         $businessProfile->business_name = $request->business_name;
                         $businessProfile->business_phone_no = '+91'.$request->business_phone_no;
                         $businessProfile->year_of_exp = $request->year_of_exp;
-                        if(($request->provider_type == "employee") && ($request->has('company_id'))){
+                        if(($request->user_type == "employee") && ($request->has('company_id'))){
                             $businessProfile->company_id = $request->company_id;
                         }
                         if($request->hasFile('front_aadhaar_card') &&  $request->hasFile('back_aadhaar_card')){
