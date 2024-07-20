@@ -7,6 +7,10 @@ use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\Controller;
 use App\Models\FirebaseNotification;
 use Illuminate\Http\Request;
+use App\Models\CompanyService;
+use App\Models\CompanyAddress;
+use App\Models\CompanyProfile;
+use App\Models\CompanyImage;
 //use Twilio\Rest\Client;
 use App\Mail\SendOtp;
 use App\Models\Role;
@@ -365,7 +369,7 @@ class CompanyAuthController extends Controller
     public function company_profile(Request $request)
     {
         try{
-            $company = User::whereHas('roles',function($q){ $q->where('role_name','company'); })->select('id','email','name','phone_number','image')->find($request->user()->id);
+            $company = User::with(['company_profile','company_services','company_address'])->whereHas('roles',function($q){ $q->where('role_name','company'); })->select('id','email','name','phone_number','image')->find($request->user()->id);
             if(!is_null($company)){
                 if(!is_null($company['image'])){
                     $url = \Storage::url($company['image']);
@@ -374,6 +378,20 @@ class CompanyAuthController extends Controller
                 else{
                     $company['image'] = asset('empty.jpg');
                 }
+                if(count($company->company_services)>0){
+                    foreach($company->company_services as $service){
+                        if(!is_null($service->service->image)){
+                            $url = \Storage::url($service->service->image);
+                            $service->service->image =  asset($url);
+                        }
+                        else{
+                            $service->service->image = asset('empty.jpg');
+                        }
+                    }
+                }
+                $company->total_rating = 0;
+                $company->total_review = 0;
+                $company->total_service = $company->company_services->count();
                 return response()->json(['sucsess'=>true,'message'=>'Your Profile','response'=>$company]);
             }
             else{
@@ -391,50 +409,180 @@ class CompanyAuthController extends Controller
     public function edit_profile(Request $request)
     {
         try{
-            $company = $request->user();
+            $company = User::whereHas('roles',function($q){ $q->where('role_name','company'); })->find($request->user()->id);
+            if(!is_null($company)){
+                $validator = Validator::make($request->all(), [
+                    'name' => 'required',
+                    'phone_number' => 'required|unique:users,phone_number,'.$company->id,
+                ]);
 
-            $validator = Validator::make($request->all(), [
-                'name' => 'required',
-                'phone_number' => 'required|unique:users,phone_number,'.$company->id,
-            ]);
+                if ($validator->fails()) {
+                    return response()->json(['sucsess'=>false,'message'=>$validator->errors()->first()],400);
+                }
 
-            if ($validator->fails()) {
-                return response()->json(['sucsess'=>false,'message'=>$validator->errors()->first()],400);
-            }
-
-            else{
-                try{
-                    if($request->hasFile('image')){
-                        if((!is_null($company->image)) && \Storage::exists($company->image))
-                        {
-                            \Storage::delete($company->image);
+                else{
+                    try{
+                        if($request->hasFile('image')){
+                            if((!is_null($company->image)) && \Storage::exists($company->image))
+                            {
+                                \Storage::delete($company->image);
+                            }
+                            $company->image = $request->file('image')->store('public/company');
                         }
-                        $company->image = $request->file('image')->store('public/company');
-                    }
 
-                    $company->name = $request->name ?? $company->name;
-                    $company->phone_number  = '+91'.$request->phone_number ?? $company->phone_number;
-                    if($company->save())
-                    {
-                        return response()->json([
-                            'success' => true,
-                            'message' => 'Your profile has been updated.',
-                       ]);
+                        $company->name = $request->name ?? $company->name;
+                        $company->phone_number  = '+91'.$request->phone_number ?? $company->phone_number;
+                        if($company->save())
+                        {
+                            return response()->json([
+                                'success' => true,
+                                'message' => 'Your profile has been updated.',
+                        ]);
+                        }
+                        else
+                        {
+                            return response()->json(['sucsess'=>false,'message'=>'Something problem, while registration']);
+                        }
                     }
-                    else
-                    {
-                        return response()->json(['sucsess'=>false,'message'=>'Something problem, while registration']);
+                    catch(\Exception $e){
+                        $array = ['request'=>$request->all(),'message'=>$e->getMessage()];
+                        \Log::info($array);
+                        return response()->json(['sucsess'=>false,'message'=>$e->getMessage()]);
                     }
                 }
-                catch(\Exception $e){
-                    $array = ['request'=>$request->all(),'message'=>$e->getMessage()];
-                    \Log::info($array);
-                    return response()->json(['sucsess'=>false,'message'=>$e->getMessage()]);
-                }
+            }
+            else{
+                return response()->json(['sucsess'=>false,'message'=>'Company not found.']);
             }
         }
         catch(\Exception $e){
             $array = ['request'=>'company edit profile','message'=>$e->getMessage()];
+            \Log::info($array);
+            return response()->json(['sucsess'=>false,'message'=>$e->getMessage()]);
+        }
+    }
+
+    // Add/Update Company Profile
+    public function companyProfile(Request $request){
+        try{
+            $company = User::whereHas('roles',function($q){ $q->where('role_name','company'); })->find($request->user()->id);
+            if(!is_null($company)){
+                $validator = Validator::make($request->all(), [
+                    'company_name'=>'required',
+                    'company_phone_number'=>'required',
+                    'gst_number' => 'required',
+                    'pan_card_number' => 'required',
+                    'company_images'=>'required|array',
+                ]);
+                if ($validator->fails()) {
+                    return response()->json(['sucsess'=>false,'message'=>$validator->errors()->first()],400);
+                }
+                else{
+                    $company_profile = CompanyProfile::updateOrCreate(['user_id'=>$company->id],['gst_number'=>$request->gst_number,'pan_card_number'=>$request->pan_card_number,'company_name'=>$request->company_name,'company_phone_number'=>'91'.$request->company_phone_number]);
+                    // if(count($request->company_images)>0) {
+                    //     CompanyImage::where('user_id',$company->id)->get();
+                    //     foreach($request->company_images as $key=>$value){
+
+                    //     }
+                    // }
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Your company profile has been added.',
+                    ]);
+
+                }
+            }
+            else{
+                return response()->json(['sucsess'=>false,'message'=>'Company not found.']);
+            }
+        }
+        catch(\Exception $e){
+            $array = ['request'=>'add company profile','message'=>$e->getMessage()];
+            \Log::info($array);
+            return response()->json(['sucsess'=>false,'message'=>$e->getMessage()]);
+        }
+    }
+
+    // Add/Update Company Service
+    public function companyService(Request $request)
+    {
+        try{
+            $company = User::whereHas('roles',function($q){ $q->where('role_name','company'); })->find($request->user()->id);
+            if(!is_null($company)){
+                $validator = Validator::make($request->all(), [
+                    'service_id' => 'required',
+                    'bio' => 'required'
+                ]);
+
+                if ($validator->fails()) {
+                    return response()->json(['sucsess'=>false,'message'=>$validator->errors()->first()],400);
+                }
+
+                else{
+                    try{
+                        CompanyService::updateOrCreate(['user_id'=>$company->id,'service_id'=>$request->service_id,'bio'=>$request->bio]);
+                        return response()->json([
+                            'success' => true,
+                            'message' => 'Your company service has been added.',
+                        ]);
+                    }
+                    catch(\Exception $e){
+                        $array = ['request'=>$request->all(),'message'=>$e->getMessage()];
+                        \Log::info($array);
+                        return response()->json(['sucsess'=>false,'message'=>$e->getMessage()]);
+                    }
+                }
+            }
+            else{
+                return response()->json(['sucsess'=>false,'message'=>'Company not found.']);
+            }
+        }
+        catch(\Exception $e){
+            $array = ['request'=>'add company service','message'=>$e->getMessage()];
+            \Log::info($array);
+            return response()->json(['sucsess'=>false,'message'=>$e->getMessage()]);
+        }
+    }
+
+    // Add/Update Company Address
+    public function companyAddress(Request $request)
+    {
+        try{
+            $company = User::whereHas('roles',function($q){ $q->where('role_name','company'); })->find($request->user()->id);
+            if(!is_null($company)){
+                $validator = Validator::make($request->all(), [
+                    'complete_address' => 'required',
+                    'landmark' => 'required',
+                    'city' => 'required',
+                    'state' => 'required',
+                    'pincode' => 'required'
+                ]);
+
+                if ($validator->fails()) {
+                    return response()->json(['sucsess'=>false,'message'=>$validator->errors()->first()],400);
+                }
+
+                else{
+                    try{
+                        CompanyAddress::updateOrCreate(['user_id'=>$company->id],['complete_address'=>$request->complete_address,'landmark'=>$request->landmark,'city'=>$request->city,'state'=>$request->state,'pincode'=>$request->pincode]);
+                        return response()->json([
+                            'success' => true,
+                            'message' => 'Your company address has been added.',
+                        ]);
+                    }
+                    catch(\Exception $e){
+                        $array = ['request'=>$request->all(),'message'=>$e->getMessage()];
+                        \Log::info($array);
+                        return response()->json(['sucsess'=>false,'message'=>$e->getMessage()]);
+                    }
+                }
+            }
+            else{
+                return response()->json(['sucsess'=>false,'message'=>'Company not found.']);
+            }
+        }
+        catch(\Exception $e){
+            $array = ['request'=>'add company address','message'=>$e->getMessage()];
             \Log::info($array);
             return response()->json(['sucsess'=>false,'message'=>$e->getMessage()]);
         }

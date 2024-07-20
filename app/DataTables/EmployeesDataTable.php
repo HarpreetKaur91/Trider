@@ -12,7 +12,7 @@ use Yajra\DataTables\Html\Editor\Editor;
 use Yajra\DataTables\Html\Editor\Fields;
 use Yajra\DataTables\Services\DataTable;
 
-class ProvidersDataTable extends DataTable
+class EmployeesDataTable extends DataTable
 {
     /**
      * Build the DataTable class.
@@ -42,7 +42,7 @@ class ProvidersDataTable extends DataTable
                 }
             })
             ->addColumn('action',function($row){
-                return '<a href="'.route('provider.view',$row->id).'" class="btn btn-gradient-primary btn-sm"><i class="bi bi-eye-fill"></i></a>&nbsp;<a onclick=deleteData("'.route('provider.destroy',$row->id).'") class="btn btn-gradient-danger btn-sm"><i class="bi bi-trash-fill"></i></a>';
+                return '<a href="'.route('employee.view',$row->id).'" class="btn btn-gradient-primary btn-sm"><i class="bi bi-eye-fill"></i></a>&nbsp;<a onclick=deleteData("'.route('employee.destroy',$row->id).'") class="btn btn-gradient-danger btn-sm"><i class="bi bi-trash-fill"></i></a>';
             })->rawColumns(['account_status','action']);
     }
 
@@ -51,7 +51,7 @@ class ProvidersDataTable extends DataTable
      */
     public function query(User $model): QueryBuilder
     {
-        return $model::whereHas('roles',function($q){ $q->where('role_name','provider'); })->newQuery();
+        return $model::whereHas('roles',function($q){ $q->where('role_name','employee'); })->newQuery();
     }
 
     /**
@@ -60,7 +60,7 @@ class ProvidersDataTable extends DataTable
     public function html(): HtmlBuilder
     {
         return $this->builder()
-                    ->setTableId('providers-table')
+                    ->setTableId('employees-table')
                     ->columns($this->getColumns())
                     ->minifiedAjax()
                     //->dom('Bfrtip')
@@ -94,6 +94,6 @@ class ProvidersDataTable extends DataTable
      */
     protected function filename(): string
     {
-        return 'Providers_' . date('YmdHis');
+        return 'Employees_' . date('YmdHis');
     }
 }

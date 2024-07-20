@@ -18,15 +18,15 @@ class CommonAPIController extends Controller
     {
         if($request->filled('param')):
             if($request->param == "all"):
-                $services = Service::where('parent_id',0)->where('status',1)->orderBy('position','asc')->select('id','name','description','image')->get();
+                $services = Service::with('service_prices')->where('parent_id',0)->where('status',1)->orderBy('position','asc')->select('id','name','description','image')->get();
             endif;
             if($request->param == "children"):
-                $services = Service::where('parent_id',0)->where('status',1)->whereHas('children')->with('children')->orderBy('position','asc')->select('id','name','description','image')->get();
+                $services = Service::with('service_prices')->where('parent_id',0)->where('status',1)->whereHas('children')->with('children')->orderBy('position','asc')->select('id','name','description','image')->get();
                 $services->makeVisible(['children']);
             endif;
         endif;
         if(!isset($request->param)):
-            $services = Service::where('parent_id',0)->where('status',1)->whereHas('children')->orderBy('position','asc')->select('id','name','description','image')->get();
+            $services = Service::with('service_prices')->where('parent_id',0)->where('status',1)->whereHas('children')->orderBy('position','asc')->select('id','name','description','image')->get();
         endif;
         if(count($services)>0):
             foreach($services as $service){

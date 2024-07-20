@@ -66,6 +66,10 @@ Route::group(['prefix'=>'company'],function()
             Route::post('edit-profile','edit_profile');
             Route::post('changePassword','change_password');
             Route::get('company-profile','company_profile');
+
+            Route::post('companyProfile','companyProfile');
+            Route::post('companyService','companyService');
+            Route::post('companyAddress','companyAddress');
         });
     });
 });
@@ -91,10 +95,14 @@ Route::group(['prefix'=>'customer'],function()
 
         Route::controller(CustomerApiController::class)->group(function(){
             Route::get('providers','providers');
+            Route::get('companies','companies');
             Route::post('providerReviews','providerReviews');
+            Route::post('companyReviews','companyReviews');
             Route::get('provider/{providerId}','getProviderProfile');
             Route::get('provider-review/{providerId}','getProviderReview');
+            Route::get('company-review/{companyId}','getCompanyReview');
             Route::match(['get','post'],'favourite_providers','favourite_providers');
+            Route::match(['get','post'],'favourite_companies','favourite_companies');
         });
     });
 });

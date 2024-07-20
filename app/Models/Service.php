@@ -10,7 +10,7 @@ class Service extends Model
     use HasFactory;
 
     protected $fillable = ['parent_id','name','logo','description','status'];
-
+    protected $hidden = ['created_at','updated_at'];
     public function parent()
     {
         return $this->belongsTo(self::class,'parent_id','id');

@@ -4,12 +4,14 @@ namespace App\Http\Controllers\API\Provider;
 
 use Illuminate\Support\Facades\Validator;
 use App\Models\ProviderBusinessProfile;
+use Illuminate\Support\Facades\Crypt;
 use App\Models\ProviderAvailability;
 use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\Controller;
 use App\Models\FirebaseNotification;
 use App\Models\ProviderService;
 use App\Models\ProviderAddress;
+use App\Models\CompanyService;
 use Illuminate\Http\Request;
 use App\Models\BankDetail;
 //use Twilio\Rest\Client;
@@ -34,12 +36,18 @@ class ProviderAuthController extends Controller
 
     // All Company List
     public function getCompanyList(){
-        $companies = User::whereHas('roles',function($q){ $q->where('role_name','company'); })->select('id','name')->get();
+        $companies = User::whereHas('roles',function($q){ $q->where('role_name','company'); })->whereHas('company_profile')->get();
         if(count($companies)>0){
+            $array=[];
+            foreach($companies as $company){
+                $id = $company->id;
+                $name = $company->company_profile->company_name;
+                array_push($array,['id'=>$id,'name'=>$name]);
+            }
             return response()->json([
                 'success' => true,
                 'message' => 'List of all companies',
-                'response' => $companies
+                'response' => $array
             ]);
         }
         else
@@ -52,8 +60,7 @@ class ProviderAuthController extends Controller
         $validator = Validator::make($request->all(), [
             'email' => 'required|email',
             'password' => 'required',
-            'provider_type' => 'required|in:employee,freelancer',
-            'company_id' => 'required_if:provider_type,==,employee',
+            'user_type' => 'required|in:employee,freelancer',
             //'phone_number' => 'required|regex:/^([0-9\s\-\+\(\)]*)$/|min:10|unique:users,phone_number',
             'device_type' => 'required|in:android,ios',
             'firebase_token' => 'required',
@@ -64,13 +71,6 @@ class ProviderAuthController extends Controller
         }
         else{
             try{
-                if(($request->provider_type == "employee") && ($request->has('company_id'))){
-                    $company = User::whereHas('roles',function($q){ $q->where('role_name','company'); })->find($request->company_id);
-                    if(is_null($company)){
-                        return response()->json(['sucsess'=>false,'message'=>'Company not found.'],400);
-                    }
-                }
-
                 $checkEmail = User::where('email',$request->email)->whereIn('role',['employee','freelancer'])->first();
                 if(is_null($checkEmail)){
                     $name = explode('@',$request->email);
@@ -81,11 +81,8 @@ class ProviderAuthController extends Controller
                     // $provider->phone_number  = '+91'.$request->phone_number;
                     // $provider->phone_number_expired_at = Carbon::now()->addMinutes(30);
                     // $provider->phone_number_code = mt_rand(1000,9999);
-                    $provider->role = $request->provider_type;
+                    $provider->role = $request->user_type;
                     $provider->status = 0;
-                    if(($request->provider_type == "employee") && ($request->has('company_id'))){
-                        $provider->company_id = $company->id;
-                    }
                     if($provider->save())
                     {
                         //$message = "Please Verify Your Account. Your OTP is ".$provider->phone_number_code;
@@ -93,17 +90,15 @@ class ProviderAuthController extends Controller
                         //$this->sendMessage($message, $provider->phone_number);
                         //$generate_token = $provider->createToken('OneTap_'.$provider->id)->plainTextToken;
 
-                        $role = Role::where('role_name',$request->provider_type)->first();
+                        $role = Role::where('role_name',$request->user_type)->first();
                         $provider->roles()->attach($role);
 
                         FirebaseNotification::updateOrCreate(['user_id'=>$provider->id,'udid'=>$request->udid],['firebase_token'=>$request->firebase_token,'device_type'=>$request->device_type]);
-
                         return response()->json([
                             'success' => true,
                             'provider_id' => $provider->id,
                             'name' => $provider->name,
-                       ]);
-
+                        ]);
                     }
                     else
                     {
@@ -396,7 +391,9 @@ class ProviderAuthController extends Controller
     public function provider_profile(Request $request)
     {
         try{
-            $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->select('id','email','name','phone_number','image')->find($request->user()->id);
+            $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })
+            ->with(['provider_business_profile','provider_availability','provider_services','provider_address'])
+            ->select('id','email','name','phone_number','image')->find($request->user()->id);
             if(!is_null($provider)){
                 if(!is_null($provider['image'])){
                     $url = \Storage::url($provider['image']);
@@ -405,8 +402,10 @@ class ProviderAuthController extends Controller
                 else{
                     $provider['image'] = asset('empty.jpg');
                 }
-                $provider->total_rating = 0;
-                $provider->total_review = 0;
+                $provider->total_rating = number_format($provider->provider_reviews->avg('rating'),2);
+                $provider->total_review = $provider->provider_reviews->count();
+                $provider->total_services = $provider->provider_services->count();
+                $provider->makeHidden('provider_reviews');
                 return response()->json(['sucsess'=>true,'message'=>'Your Profile','response'=>$provider]);
             }
             else{
@@ -424,46 +423,50 @@ class ProviderAuthController extends Controller
     public function edit_profile(Request $request)
     {
         try{
-            $provider = $request->user();
+            $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->select('id','email','name','phone_number','image')->find($request->user()->id);
+            if(!is_null($provider)){
+                $validator = Validator::make($request->all(), [
+                    'name' => 'required',
+                    'phone_number' => 'required|unique:users,phone_number,'.$provider->id,
+                ]);
 
-            $validator = Validator::make($request->all(), [
-                'name' => 'required',
-                'phone_number' => 'required|unique:users,phone_number,'.$provider->id,
-            ]);
+                if ($validator->fails()) {
+                    return response()->json(['sucsess'=>false,'message'=>$validator->errors()->first()],400);
+                }
 
-            if ($validator->fails()) {
-                return response()->json(['sucsess'=>false,'message'=>$validator->errors()->first()],400);
-            }
-
-            else{
-                try{
-                    if($request->hasFile('image')){
-                        if((!is_null($provider->image)) && \Storage::exists($provider->image))
-                        {
-                            \Storage::delete($provider->image);
+                else{
+                    try{
+                        if($request->hasFile('image')){
+                            if((!is_null($provider->image)) && \Storage::exists($provider->image))
+                            {
+                                \Storage::delete($provider->image);
+                            }
+                            $provider->image = $request->file('image')->store('public/provider');
                         }
-                        $provider->image = $request->file('image')->store('public/provider');
-                    }
 
-                    $provider->name = $request->name ?? $provider->name;
-                    $provider->phone_number  = '+91'.$request->phone_number ?? $provider->phone_number;
-                    if($provider->save())
-                    {
-                        return response()->json([
-                            'success' => true,
-                            'message' => 'Your profile has been updated.',
-                       ]);
+                        $provider->name = $request->name ?? $provider->name;
+                        $provider->phone_number  = '+91'.$request->phone_number ?? $provider->phone_number;
+                        if($provider->save())
+                        {
+                            return response()->json([
+                                'success' => true,
+                                'message' => 'Your profile has been updated.',
+                        ]);
+                        }
+                        else
+                        {
+                            return response()->json(['sucsess'=>false,'message'=>'Something problem, while update your profile']);
+                        }
                     }
-                    else
-                    {
-                        return response()->json(['sucsess'=>false,'message'=>'Something problem, while update your profile']);
+                    catch(\Exception $e){
+                        $array = ['request'=>$request->all(),'message'=>$e->getMessage()];
+                        \Log::info($array);
+                        return response()->json(['sucsess'=>false,'message'=>$e->getMessage()]);
                     }
                 }
-                catch(\Exception $e){
-                    $array = ['request'=>$request->all(),'message'=>$e->getMessage()];
-                    \Log::info($array);
-                    return response()->json(['sucsess'=>false,'message'=>$e->getMessage()]);
-                }
+            }
+            else{
+                return response()->json(['sucsess'=>false,'message'=>'Provider not found.']);
             }
         }
         catch(\Exception $e){
@@ -478,74 +481,88 @@ class ProviderAuthController extends Controller
     public function providerBusinessProfile(Request $request)
     {
         try{
-            $provider = $request->user();
+            $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->select('id','email','name','phone_number','image')->find($request->user()->id);
+            if(!is_null($provider)){
+                $validator = Validator::make($request->all(), [
+                    'business_name' => 'required',
+                    'business_phone_no' => 'required|unique:provider_business_profiles,business_phone_no',
+                    'year_of_exp' => 'required',
+                    'days_of_availability' => 'required|array',
+                    'provider_type' => 'required|in:employee,freelancer',
+                    'company_id' => 'required_if:provider_type,==,employee',
+                ]);
 
-            $validator = Validator::make($request->all(), [
-                'business_name' => 'required',
-                'business_phone_no' => 'required|unique:provider_business_profiles,business_phone_no',
-                'year_of_exp' => 'required',
-                'days_of_availability' => 'required|array',
-                'provider_type' => 'required|in:employee,freelancer',
-                'company_id' => 'required_if:provider_type,==,employee',
-            ]);
+                if ($validator->fails()) {
+                    return response()->json(['sucsess'=>false,'message'=>$validator->errors()->first()],400);
+                }
 
-            if ($validator->fails()) {
-                return response()->json(['sucsess'=>false,'message'=>$validator->errors()->first()],400);
-            }
+                else{
+                    try{
 
-            else{
-                try{
-                    $businessProfile = ProviderBusinessProfile::where('user_id',$provider->id)->first();
-                    if(is_null($businessProfile)):
-                        $businessProfile = new ProviderBusinessProfile;
-                    endif;
-                    $businessProfile->user_id = $provider->id;
-                    $businessProfile->business_name = $request->business_name;
-                    $businessProfile->business_phone_no = '+91'.$request->business_phone_no;
-                    $businessProfile->year_of_exp = $request->year_of_exp;
-
-                    if($request->hasFile('front_aadhaar_card') &&  $request->hasFile('back_aadhaar_card')){
-                        if((!is_null($provider->front_aadhaar_card)) && \Storage::exists($provider->front_aadhaar_card) && (!is_null($provider->back_aadhaar_card)) && \Storage::exists($provider->back_aadhaar_card))
-                        {
-                            \Storage::delete($provider->front_aadhaar_card);
-                            \Storage::delete($provider->back_aadhaar_card);
-                        }
-                        $provider->front_aadhaar_card = $request->file('front_aadhaar_card')->store('public/provider/providerBusinessProfile');
-                        $provider->back_aadhaar_card = $request->file('back_aadhaar_card')->store('public/provider/providerBusinessProfile');
-                    }
-
-                    if($request->hasFile('business_image')){
-                        if((!is_null($businessProfile->business_image)) && \Storage::exists($businessProfile->business_image))
-                        {
-                            \Storage::delete($businessProfile->business_image);
-                        }
-                        $businessProfile->business_image = $request->file('business_image')->store('public/provider/providerBusinessProfile');
-                    }
-
-                    if($businessProfile->save()){
-
-                        if(isset($request->days_of_availability) && !empty($request->days_of_availability)){
-                            foreach($request->days_of_availability as $availability){
-                                foreach($availability as $key=>$value){
-                                    ProviderAvailability::updateOrCreate(['user_id'=>$provider->id],[$key=>$value]);
-                                }
+                        if(($request->provider_type == "employee") && ($request->has('company_id'))){
+                            $company = User::whereHas('roles',function($q){ $q->where('role_name','company'); })->find($request->company_id);
+                            if(is_null($company)){
+                                return response()->json(['sucsess'=>false,'message'=>'Company not found.'],400);
                             }
                         }
 
-                        return response()->json([
-                            'success' => true,
-                            'message' => 'Your business profile has been added.',
-                       ]);
+                        $businessProfile = ProviderBusinessProfile::where('user_id',$provider->id)->first();
+                        if(is_null($businessProfile)):
+                            $businessProfile = new ProviderBusinessProfile;
+                        endif;
+                        $businessProfile->user_id = $provider->id;
+                        $businessProfile->business_name = $request->business_name;
+                        $businessProfile->business_phone_no = '+91'.$request->business_phone_no;
+                        $businessProfile->year_of_exp = $request->year_of_exp;
+                        if(($request->provider_type == "employee") && ($request->has('company_id'))){
+                            $businessProfile->company_id = $request->company_id;
+                        }
+                        if($request->hasFile('front_aadhaar_card') &&  $request->hasFile('back_aadhaar_card')){
+                            if((!is_null($provider->front_aadhaar_card)) && \Storage::exists($provider->front_aadhaar_card) && (!is_null($provider->back_aadhaar_card)) && \Storage::exists($provider->back_aadhaar_card))
+                            {
+                                \Storage::delete($provider->front_aadhaar_card);
+                                \Storage::delete($provider->back_aadhaar_card);
+                            }
+                            $provider->front_aadhaar_card = $request->file('front_aadhaar_card')->store('public/provider/providerBusinessProfile');
+                            $provider->back_aadhaar_card = $request->file('back_aadhaar_card')->store('public/provider/providerBusinessProfile');
+                        }
+
+                        if($request->hasFile('business_image')){
+                            if((!is_null($businessProfile->business_image)) && \Storage::exists($businessProfile->business_image))
+                            {
+                                \Storage::delete($businessProfile->business_image);
+                            }
+                            $businessProfile->business_image = $request->file('business_image')->store('public/provider/providerBusinessProfile');
+                        }
+
+                        if($businessProfile->save()){
+
+                            if(isset($request->days_of_availability) && !empty($request->days_of_availability)){
+                                foreach($request->days_of_availability as $availability){
+                                    foreach($availability as $key=>$value){
+                                        ProviderAvailability::updateOrCreate(['user_id'=>$provider->id],[$key=>$value]);
+                                    }
+                                }
+                            }
+
+                            return response()->json([
+                                'success' => true,
+                                'message' => 'Your business profile has been added.',
+                        ]);
+                        }
+                        else{
+                            return response()->json(['sucsess'=>false,'message'=>'Something problem, while add your business profile']);
+                        }
                     }
-                    else{
-                        return response()->json(['sucsess'=>false,'message'=>'Something problem, while add your business profile']);
+                    catch(\Exception $e){
+                        $array = ['request'=>$request->all(),'message'=>$e->getMessage()];
+                        \Log::info($array);
+                        return response()->json(['sucsess'=>false,'message'=>$e->getMessage()]);
                     }
                 }
-                catch(\Exception $e){
-                    $array = ['request'=>$request->all(),'message'=>$e->getMessage()];
-                    \Log::info($array);
-                    return response()->json(['sucsess'=>false,'message'=>$e->getMessage()]);
-                }
+            }
+            else{
+                return response()->json(['sucsess'=>false,'message'=>'Provider not found.']);
             }
         }
         catch(\Exception $e){
@@ -559,30 +576,54 @@ class ProviderAuthController extends Controller
     public function providerBusinessService(Request $request)
     {
         try{
-            $provider = $request->user();
+            $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->select('id','email','name','phone_number','image')->find($request->user()->id);
+            if(!is_null($provider)){
+                $validator = Validator::make($request->all(), [
+                    'service_id' => 'required',
+                    'bio' => 'required'
+                ]);
 
-            $validator = Validator::make($request->all(), [
-                'service_id' => 'required',
-                'bio' => 'required'
-            ]);
+                if ($validator->fails()) {
+                    return response()->json(['sucsess'=>false,'message'=>$validator->errors()->first()],400);
+                }
 
-            if ($validator->fails()) {
-                return response()->json(['sucsess'=>false,'message'=>$validator->errors()->first()],400);
+                else{
+                    try{
+                        if($provider->role == 'employee'):
+                            $checkCompany = User::whereHas('roles',function($q){ $q->where('role_name','company'); })->find($provider->company_id);
+                            if(!is_null($checkCompany)){
+                                $checkServcie = CompanyService::where('service_id',$request->service_id)->first();
+                                if(!is_null($checkServcie)){
+                                    ProviderService::updateOrCreate(['user_id'=>$provider->id,'service_id'=>$request->service_id,'bio'=>$request->bio]);
+                                    return response()->json([
+                                        'success' => true,
+                                        'message' => 'Your business provider service has been added.',
+                                    ]);
+                                }
+                                else{
+                                    return response()->json(['sucsess'=>false,'message'=>'Company not found.']);
+                                }
+                            }
+                            else{
+                                return response()->json(['sucsess'=>false,'message'=>'Company not found.']);
+                            }
+                        else:
+                            ProviderService::updateOrCreate(['user_id'=>$provider->id,'service_id'=>$request->service_id,'bio'=>$request->bio]);
+                            return response()->json([
+                                'success' => true,
+                                'message' => 'Your business provider service has been added.',
+                            ]);
+                        endif;
+                    }
+                    catch(\Exception $e){
+                        $array = ['request'=>$request->all(),'message'=>$e->getMessage()];
+                        \Log::info($array);
+                        return response()->json(['sucsess'=>false,'message'=>$e->getMessage()]);
+                    }
+                }
             }
-
             else{
-                try{
-                    ProviderService::updateOrCreate(['user_id'=>$provider->id,'service_id'=>$request->service_id,'bio'=>$request->bio]);
-                    return response()->json([
-                        'success' => true,
-                        'message' => 'Your business provider service has been added.',
-                    ]);
-                }
-                catch(\Exception $e){
-                    $array = ['request'=>$request->all(),'message'=>$e->getMessage()];
-                    \Log::info($array);
-                    return response()->json(['sucsess'=>false,'message'=>$e->getMessage()]);
-                }
+                return response()->json(['sucsess'=>false,'message'=>'Provider not found.']);
             }
         }
         catch(\Exception $e){
@@ -596,33 +637,37 @@ class ProviderAuthController extends Controller
     public function providerBusinessAddress(Request $request)
     {
         try{
-            $provider = $request->user();
+            $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->select('id','email','name','phone_number','image')->find($request->user()->id);
+            if(!is_null($provider)){
+                $validator = Validator::make($request->all(), [
+                    'complete_address' => 'required',
+                    'landmark' => 'required',
+                    'city' => 'required',
+                    'state' => 'required',
+                    'pincode' => 'required'
+                ]);
 
-            $validator = Validator::make($request->all(), [
-                'complete_address' => 'required',
-                'landmark' => 'required',
-                'city' => 'required',
-                'state' => 'required',
-                'pincode' => 'required'
-            ]);
+                if ($validator->fails()) {
+                    return response()->json(['sucsess'=>false,'message'=>$validator->errors()->first()],400);
+                }
 
-            if ($validator->fails()) {
-                return response()->json(['sucsess'=>false,'message'=>$validator->errors()->first()],400);
+                else{
+                    try{
+                        ProviderAddress::updateOrCreate(['user_id'=>$provider->id],['complete_address'=>$request->complete_address,'landmark'=>$request->landmark,'city'=>$request->city,'state'=>$request->state,'pincode'=>$request->pincode]);
+                        return response()->json([
+                            'success' => true,
+                            'message' => 'Your business provider address has been added.',
+                        ]);
+                    }
+                    catch(\Exception $e){
+                        $array = ['request'=>$request->all(),'message'=>$e->getMessage()];
+                        \Log::info($array);
+                        return response()->json(['sucsess'=>false,'message'=>$e->getMessage()]);
+                    }
+                }
             }
-
             else{
-                try{
-                    ProviderAddress::updateOrCreate(['user_id'=>$provider->id],['complete_address'=>$request->complete_address,'landmark'=>$request->landmark,'city'=>$request->city,'state'=>$request->state,'pincode'=>$request->pincode]);
-                    return response()->json([
-                        'success' => true,
-                        'message' => 'Your business provider address has been added.',
-                    ]);
-                }
-                catch(\Exception $e){
-                    $array = ['request'=>$request->all(),'message'=>$e->getMessage()];
-                    \Log::info($array);
-                    return response()->json(['sucsess'=>false,'message'=>$e->getMessage()]);
-                }
+                return response()->json(['sucsess'=>false,'message'=>'Provider not found.']);
             }
         }
         catch(\Exception $e){
@@ -636,45 +681,49 @@ class ProviderAuthController extends Controller
     public function bank_detail(Request $request)
     {
         try{
-            $provider = $request->user();
+            $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->select('id','email','name','phone_number','image')->find($request->user()->id);
+            if(!is_null($provider)){
+                if($request->isMethod('post')){
+                    $validator = Validator::make($request->all(), [
+                        'account_holder_name' => 'required',
+                        'bank_name' => 'required',
+                        'account_name' => 'required',
+                        'ifsc_code' => 'required',
+                    ]);
 
-            if($request->isMethod('post')){
-                $validator = Validator::make($request->all(), [
-                    'account_holder_name' => 'required',
-                    'bank_name' => 'required',
-                    'account_name' => 'required',
-                    'ifsc_code' => 'required',
-                ]);
-
-                if ($validator->fails()) {
-                    return response()->json(['sucsess'=>false,'message'=>$validator->errors()->first()],400);
-                }
-
-                else{
-                    try{
-                        $request['user_id'] = $provider->id;
-                        BankDetail::updateOrCreate(['user_id'=>$provider->id],['account_holder_name'=>$request->account_holder_name,'bank_name'=>$request->bank_name,'account_name'=>$request->account_name,'ifsc_code'=>$request->ifsc_code]);
-                        return response()->json([
-                            'success' => true,
-                            'message' => 'Your bank detail has been added.',
-                        ]);
+                    if ($validator->fails()) {
+                        return response()->json(['sucsess'=>false,'message'=>$validator->errors()->first()],400);
                     }
-                    catch(\Exception $e){
-                        $array = ['request'=>$request->all(),'message'=>$e->getMessage()];
-                        \Log::info($array);
-                        return response()->json(['sucsess'=>false,'message'=>$e->getMessage()]);
+
+                    else{
+                        try{
+                            $request['user_id'] = $provider->id;
+                            BankDetail::updateOrCreate(['user_id'=>$provider->id],['account_holder_name'=>$request->account_holder_name,'bank_name'=>$request->bank_name,'account_name'=>$request->account_name,'ifsc_code'=>$request->ifsc_code]);
+                            return response()->json([
+                                'success' => true,
+                                'message' => 'Your bank detail has been added.',
+                            ]);
+                        }
+                        catch(\Exception $e){
+                            $array = ['request'=>$request->all(),'message'=>$e->getMessage()];
+                            \Log::info($array);
+                            return response()->json(['sucsess'=>false,'message'=>$e->getMessage()]);
+                        }
+                    }
+                }
+                else
+                {
+                    $bank_detail = BankDetail::where('user_id',$provider->id)->select('account_holder_name','bank_name','account_name','ifsc_code')->first();
+                    if(!is_null($bank_detail)){
+                        return response()->json(['sucsess'=>true,'message'=>'Your Bank Detail','response'=>$bank_detail]);
+                    }
+                    else{
+                        return response()->json(['sucsess'=>false,'message'=>'Bank Detail not found.']);
                     }
                 }
             }
-            else
-            {
-                $bank_detail = BankDetail::where('user_id',$provider->id)->select('account_holder_name','bank_name','account_name','ifsc_code')->first();
-                if(!is_null($bank_detail)){
-                    return response()->json(['sucsess'=>true,'message'=>'Your Bank Detail','response'=>$bank_detail]);
-                }
-                else{
-                    return response()->json(['sucsess'=>false,'message'=>'Bank Detail not found.']);
-                }
+            else{
+                return response()->json(['sucsess'=>false,'message'=>'Provider not found.']);
             }
         }
         catch(\Exception $e){

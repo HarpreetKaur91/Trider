@@ -72,13 +72,40 @@ class User extends Authenticatable
         return $this->hasMany('App\Models\FavouriteProvider');
     }
 
+    public function favourite_companies()
+    {
+        return $this->hasMany('App\Models\FavouriteCompany');
+    }
     public function provider_services()
     {
-        return $this->hasMany('App\Models\ProviderService');
+        return $this->hasMany('App\Models\ProviderService')->with(['service' => function ($query) {
+            $query->select('id','name','image');
+        }]);
     }
 
     public function provider_reviews()
     {
         return $this->hasMany('App\Models\ProviderReview','provider_id','id');
+    }
+
+    public function company_reviews()
+    {
+        return $this->hasMany('App\Models\CompanyReview','company_id','id');
+    }
+    public function company_address()
+    {
+        return $this->hasOne('App\Models\CompanyAddress');
+    }
+
+    public function company_profile()
+    {
+        return $this->hasOne('App\Models\CompanyProfile');
+    }
+
+    public function company_services()
+    {
+        return $this->hasMany('App\Models\CompanyService')->with(['service' => function ($query) {
+            $query->select('id','name','image');
+        }]);
     }
 }

@@ -11,17 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('provider_business_profiles', function (Blueprint $table) {
+        Schema::create('company_reviews', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onUpdate('cascade')->onDelete('cascade');
-            $table->unsignedBigInteger('company_id')->nullable();
+            $table->unsignedBigInteger('company_id');
             $table->foreign('company_id')->references('id')->on('users')->onDelete('cascade');
-            $table->char('business_name');
-            $table->string('business_image');
-            $table->char('business_phone_no');
-            $table->char('year_of_exp');
-            $table->string('front_aadhaar_card');
-            $table->string('back_aadhaar_card');
+            $table->decimal('rating',8,2)->default(0);
+            $table->text('comment')->nullable();
             $table->boolean('status')->default(0);
             $table->timestamps();
         });
@@ -32,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('provider_business_profiles');
+        Schema::dropIfExists('company_reviews');
     }
 };
