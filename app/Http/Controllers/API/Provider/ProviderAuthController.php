@@ -96,7 +96,7 @@ class ProviderAuthController extends Controller
                         FirebaseNotification::updateOrCreate(['user_id'=>$provider->id,'udid'=>$request->udid],['firebase_token'=>$request->firebase_token,'device_type'=>$request->device_type]);
                         return response()->json([
                             'success' => true,
-                            'provider_id' => $provider->id,
+                            'user_id' => $provider->id,
                             'name' => $provider->name,
                         ]);
                     }
@@ -120,13 +120,13 @@ class ProviderAuthController extends Controller
     // Verify Phone Number OTP
     public function verifyPhoneNumberOtp(Request $request)
     {
-        $validator = Validator::make($request->all(), ['otp'=>'required|numeric','provider_id'=>'required|integer']);
+        $validator = Validator::make($request->all(), ['otp'=>'required|numeric','user_id'=>'required|integer']);
         if ($validator->fails()):
           return response()->json(['sucsess' => false,'message' => $validator->errors()->first()]);
         endif;
 
         try{
-            $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->find($request->provider_id);
+            $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->find($request->user_id);
             if(!is_null($provider)):
               if($provider->phone_number_code == $request->otp)
               {
@@ -143,7 +143,7 @@ class ProviderAuthController extends Controller
                 return response()->json(['sucsess' => false,'message' => 'OTP not matched']);
               }
             else:
-              return response()->json(['sucsess' => false,'message' => 'Provider not found']);
+              return response()->json(['sucsess' => false,'message' => 'User not found']);
             endif;
         }
         catch(\Exception $e){
@@ -176,7 +176,6 @@ class ProviderAuthController extends Controller
                         $generate_token = $provider->createToken('OneTap_'.$provider->id)->plainTextToken;
 
                         return response()->json([
-                            'status'=>2,
                             'success' => true,
                             'message' => "You're successfully login.",
                             'token' => $generate_token,
@@ -189,7 +188,7 @@ class ProviderAuthController extends Controller
                     else:
                         $array = ['request'=>$request->all(),'message'=>'Provider not found'];
                         \Log::info($array);
-                        return response()->json(['sucsess'=>false,'message'=>'Provider not found']);
+                        return response()->json(['sucsess'=>false,'message'=>'User not found']);
                     endif;
                 else:
                     $array = ['request'=>$request->all(),'message'=>'These credentials do not match our records.'];
@@ -270,13 +269,13 @@ class ProviderAuthController extends Controller
     // Verify OTP
     public function verify_otp(Request $request)
     {
-        $validator = Validator::make($request->all(), ['otp'=>'required|numeric','provider_id'=>'required|integer']);
+        $validator = Validator::make($request->all(), ['otp'=>'required|numeric','user_id'=>'required|integer']);
         if ($validator->fails()):
           return response()->json(['sucsess' => false,'message' => $validator->errors()->first()]);
         endif;
 
         try{
-            $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->find($request->provider_id);
+            $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->find($request->user_id);
             if(!is_null($provider)):
               $otp = Otp::whereCode($request->otp)->whereUserId($provider->id)->first();
               if(!is_null($otp)):
@@ -289,7 +288,7 @@ class ProviderAuthController extends Controller
                 return response()->json(['sucsess' => false,'message' => 'OTP not matched']);
               endif;
             else:
-              return response()->json(['sucsess' => false,'message' => 'Provider not found']);
+              return response()->json(['sucsess' => false,'message' => 'User not found']);
             endif;
         }
         catch(\Exception $e){
@@ -303,12 +302,12 @@ class ProviderAuthController extends Controller
     // Reset Password
     public function reset_password(Request $request)
     {
-        $validator = Validator::make($request->all(), ['provider_id'=>'required|integer','password'=>'required|string|confirmed']);
+        $validator = Validator::make($request->all(), ['user_id'=>'required|integer','password'=>'required|string|confirmed']);
         if ($validator->fails()):
           return response()->json(['sucsess' => false,'message' => $validator->errors()->first()]);
         endif;
         try{
-            $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->find($request->provider_id);
+            $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->find($request->user_id);
             if(!is_null($provider)):
                 $password = \Hash::make($request->password);
                 $provider->password = $password;
@@ -319,7 +318,7 @@ class ProviderAuthController extends Controller
                   return response()->json(['sucsess' => false,'message' => 'Your password has not been changed']);
                 endif;
             else:
-              return response()->json(['sucsess' => false,'message' => "Provider not found"]);
+              return response()->json(['sucsess' => false,'message' => "User not found"]);
             endif;
         }
         catch(\Exception $e){
@@ -352,7 +351,7 @@ class ProviderAuthController extends Controller
                     return response()->json(['success' => false,'message' => "Password does not matches with current password"]);
                 endif;
             else:
-                return response()->json(['success'=>false,'message'=>'Provider not found']);
+                return response()->json(['success'=>false,'message'=>'User not found']);
             endif;
         }
         catch(\Exception $e){
@@ -376,7 +375,7 @@ class ProviderAuthController extends Controller
 
                 return response()->json(['sucsess'=>true,'message'=>"You have been logged out!."]);
             else:
-                return response()->json(['sucsess'=>false,'message'=>'Provider not found']);
+                return response()->json(['sucsess'=>false,'message'=>'User not found']);
             endif;
         }
         catch(\Exception $e){
@@ -409,7 +408,7 @@ class ProviderAuthController extends Controller
                 return response()->json(['sucsess'=>true,'message'=>'Your Profile','response'=>$provider]);
             }
             else{
-                return response()->json(['sucsess'=>false,'message'=>'Provider not found.']);
+                return response()->json(['sucsess'=>false,'message'=>'User not found.']);
             }
         }
         catch(\Exception $e){
@@ -423,7 +422,7 @@ class ProviderAuthController extends Controller
     public function edit_profile(Request $request)
     {
         try{
-            $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->select('id','email','name','phone_number','image')->find($request->user()->id);
+            $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->find($request->user()->id);
             if(!is_null($provider)){
                 $validator = Validator::make($request->all(), [
                     'name' => 'required',
@@ -466,7 +465,7 @@ class ProviderAuthController extends Controller
                 }
             }
             else{
-                return response()->json(['sucsess'=>false,'message'=>'Provider not found.']);
+                return response()->json(['sucsess'=>false,'message'=>'User not found.']);
             }
         }
         catch(\Exception $e){
@@ -481,7 +480,7 @@ class ProviderAuthController extends Controller
     public function providerBusinessProfile(Request $request)
     {
         try{
-            $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->select('id','email','name','phone_number','image')->find($request->user()->id);
+            $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->find($request->user()->id);
             if(!is_null($provider)){
                 $validator = Validator::make($request->all(), [
                     'business_name' => 'required',
@@ -562,7 +561,7 @@ class ProviderAuthController extends Controller
                 }
             }
             else{
-                return response()->json(['sucsess'=>false,'message'=>'Provider not found.']);
+                return response()->json(['sucsess'=>false,'message'=>'User not found.']);
             }
         }
         catch(\Exception $e){
@@ -576,7 +575,7 @@ class ProviderAuthController extends Controller
     public function providerBusinessService(Request $request)
     {
         try{
-            $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->select('id','email','name','phone_number','image')->find($request->user()->id);
+            $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->find($request->user()->id);
             if(!is_null($provider)){
                 $validator = Validator::make($request->all(), [
                     'service_id' => 'required',
@@ -590,7 +589,7 @@ class ProviderAuthController extends Controller
                 else{
                     try{
                         if($provider->role == 'employee'):
-                            $checkCompany = User::whereHas('roles',function($q){ $q->where('role_name','company'); })->find($provider->company_id);
+                            $checkCompany = User::whereHas('roles',function($q){ $q->where('role_name','company'); })->find($provider->provider_business_profile->company_id);
                             if(!is_null($checkCompany)){
                                 $checkServcie = CompanyService::where('service_id',$request->service_id)->first();
                                 if(!is_null($checkServcie)){
@@ -611,7 +610,7 @@ class ProviderAuthController extends Controller
                             ProviderService::updateOrCreate(['user_id'=>$provider->id,'service_id'=>$request->service_id,'bio'=>$request->bio]);
                             return response()->json([
                                 'success' => true,
-                                'message' => 'Your business provider service has been added.',
+                                'message' => 'Your business service has been added.',
                             ]);
                         endif;
                     }
@@ -623,7 +622,7 @@ class ProviderAuthController extends Controller
                 }
             }
             else{
-                return response()->json(['sucsess'=>false,'message'=>'Provider not found.']);
+                return response()->json(['sucsess'=>false,'message'=>'User not found.']);
             }
         }
         catch(\Exception $e){
@@ -637,7 +636,7 @@ class ProviderAuthController extends Controller
     public function providerBusinessAddress(Request $request)
     {
         try{
-            $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->select('id','email','name','phone_number','image')->find($request->user()->id);
+            $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->find($request->user()->id);
             if(!is_null($provider)){
                 $validator = Validator::make($request->all(), [
                     'complete_address' => 'required',
@@ -656,7 +655,7 @@ class ProviderAuthController extends Controller
                         ProviderAddress::updateOrCreate(['user_id'=>$provider->id],['complete_address'=>$request->complete_address,'landmark'=>$request->landmark,'city'=>$request->city,'state'=>$request->state,'pincode'=>$request->pincode]);
                         return response()->json([
                             'success' => true,
-                            'message' => 'Your business provider address has been added.',
+                            'message' => 'Your business address has been added.',
                         ]);
                     }
                     catch(\Exception $e){
@@ -667,7 +666,7 @@ class ProviderAuthController extends Controller
                 }
             }
             else{
-                return response()->json(['sucsess'=>false,'message'=>'Provider not found.']);
+                return response()->json(['sucsess'=>false,'message'=>'User not found.']);
             }
         }
         catch(\Exception $e){
@@ -681,7 +680,7 @@ class ProviderAuthController extends Controller
     public function bank_detail(Request $request)
     {
         try{
-            $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->select('id','email','name','phone_number','image')->find($request->user()->id);
+            $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->find($request->user()->id);
             if(!is_null($provider)){
                 if($request->isMethod('post')){
                     $validator = Validator::make($request->all(), [
@@ -723,7 +722,7 @@ class ProviderAuthController extends Controller
                 }
             }
             else{
-                return response()->json(['sucsess'=>false,'message'=>'Provider not found.']);
+                return response()->json(['sucsess'=>false,'message'=>'User not found.']);
             }
         }
         catch(\Exception $e){
