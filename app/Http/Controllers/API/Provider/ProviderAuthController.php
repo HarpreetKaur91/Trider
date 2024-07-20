@@ -488,7 +488,7 @@ class ProviderAuthController extends Controller
                     'business_phone_no' => 'required|unique:provider_business_profiles,business_phone_no',
                     'year_of_exp' => 'required',
                     'days_of_availability' => 'required|array',
-                    'provider_type' => 'required|in:employee,freelancer',
+                    'user_type' => 'required|in:employee,freelancer',
                     'company_id' => 'required_if:provider_type,==,employee',
                 ]);
 
