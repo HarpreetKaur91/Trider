@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onUpdate('cascade')->onDelete('cascade');
             $table->string('udid');
             $table->string('firebase_token');
-            $table->set('device_type',['android','ios']);
+            $table->set('device_type',['android','ios','web']);
             $table->boolean('status')->default(0);
             $table->timestamps();
         });

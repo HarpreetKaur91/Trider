@@ -11,11 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('company_images', function (Blueprint $table) {
+        Schema::create('business_reviews', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onUpdate('cascade')->onDelete('cascade');
-            $table->foreignId('company_profile_id')->constrained()->onUpdate('cascade')->onDelete('cascade');
-            $table->string('image');
+            $table->unsignedBigInteger('business_id');
+            $table->foreign('business_id')->references('id')->on('users')->onDelete('cascade');
+            $table->decimal('rating',8,2)->default(0);
+            $table->text('comment')->nullable();
+            $table->boolean('status')->default(0);
             $table->timestamps();
         });
     }
@@ -25,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('company_images');
+        Schema::dropIfExists('business_reviews');
     }
 };

@@ -7,9 +7,11 @@ use App\Http\Controllers\API\Customer\CustomerAuthController;
 use App\Http\Controllers\API\Customer\CustomerApiController;
 use App\Http\Controllers\API\Company\CompanyAuthController;
 use App\Http\Controllers\API\CommonAPIController;
+use App\Http\Controllers\API\AuthController;
 
 Route::controller(CommonAPIController::class)->group(function(){
     Route::get('services','services');
+    Route::get('getCompanyList','getCompanyList');
 
     Route::middleware('auth:sanctum')->group(function(){
         Route::post('contact-us','contact_us');
@@ -18,19 +20,21 @@ Route::controller(CommonAPIController::class)->group(function(){
         Route::get('privacy-policy-content','privacy_policy_content');
         Route::get('term-of-condition-content','term_of_condition_content');
     });
-
 });
 
 Route::group(['prefix'=>'provider'],function()
 {
-    Route::controller(ProviderAuthController::class)->group(function(){
-        Route::post('login','login');
+    Route::controller(AuthController::class)->group(function(){
         Route::post('register','register');
         Route::post('verifyOtp','verify_otp');
-        Route::get('getCompanyList','getCompanyList');
         Route::post('resetPassword','reset_password');
         Route::post('forgotPassword','forgot_password');
         Route::post('verifyPhoneNumberOtp','verifyPhoneNumberOtp');
+        Route::post('addBusinessProfile','addBusinessProfile');
+    });
+
+    Route::controller(ProviderAuthController::class)->group(function(){
+        Route::post('login','login');
     });
 
     Route::middleware('auth:sanctum')->group(function(){
@@ -40,10 +44,6 @@ Route::group(['prefix'=>'provider'],function()
             Route::post('changePassword','change_password');
             Route::get('provider-profile','provider_profile');
 
-            Route::post('providerBusinessProfile','providerBusinessProfile');
-            Route::post('providerBusinessService','providerBusinessService');
-            Route::post('providerBusinessAddress','providerBusinessAddress');
-
             Route::match(['get','post'],'bank-detail','bank_detail');
         });
     });
@@ -51,13 +51,17 @@ Route::group(['prefix'=>'provider'],function()
 
 Route::group(['prefix'=>'company'],function()
 {
-    Route::controller(CompanyAuthController::class)->group(function(){
-        Route::post('login','login');
+    Route::controller(AuthController::class)->group(function(){
         Route::post('register','register');
         Route::post('verifyOtp','verify_otp');
         Route::post('resetPassword','reset_password');
         Route::post('forgotPassword','forgot_password');
         Route::post('verifyPhoneNumberOtp','verifyPhoneNumberOtp');
+        Route::post('addBusinessProfile','addBusinessProfile');
+    });
+
+    Route::controller(CompanyAuthController::class)->group(function(){
+        Route::post('login','login');
     });
 
     Route::middleware('auth:sanctum')->group(function(){
@@ -66,23 +70,22 @@ Route::group(['prefix'=>'company'],function()
             Route::post('edit-profile','edit_profile');
             Route::post('changePassword','change_password');
             Route::get('company-profile','company_profile');
-
-            Route::post('companyProfile','companyProfile');
-            Route::post('companyService','companyService');
-            Route::post('companyAddress','companyAddress');
         });
     });
 });
 
 Route::group(['prefix'=>'customer'],function()
 {
-    Route::controller(CustomerAuthController::class)->group(function(){
-        Route::post('login','login');
+    Route::controller(AuthController::class)->group(function(){
         Route::post('register','register');
         Route::post('verifyOtp','verify_otp');
         Route::post('resetPassword','reset_password');
         Route::post('forgotPassword','forgot_password');
         Route::post('verifyPhoneNumberOtp','verifyPhoneNumberOtp');
+    });
+
+    Route::controller(CustomerAuthController::class)->group(function(){
+        Route::post('login','login');
     });
 
     Route::middleware('auth:sanctum')->group(function(){
@@ -94,15 +97,15 @@ Route::group(['prefix'=>'customer'],function()
         });
 
         Route::controller(CustomerApiController::class)->group(function(){
-            Route::get('providers','providers');
-            Route::get('companies','companies');
-            Route::post('providerReviews','providerReviews');
-            Route::post('companyReviews','companyReviews');
-            Route::get('provider/{providerId}','getProviderProfile');
-            Route::get('provider-review/{providerId}','getProviderReview');
-            Route::get('company-review/{companyId}','getCompanyReview');
-            Route::match(['get','post'],'favourite_providers','favourite_providers');
-            Route::match(['get','post'],'favourite_companies','favourite_companies');
+            // Route::get('providers','providers');
+            // Route::get('companies','companies');
+            // Route::post('providerReviews','providerReviews');
+            // Route::post('companyReviews','companyReviews');
+            // Route::get('provider/{providerId}','getProviderProfile');
+            // Route::get('provider-review/{providerId}','getProviderReview');
+            // Route::get('company-review/{companyId}','getCompanyReview');
+            // Route::match(['get','post'],'favourite_providers','favourite_providers');
+            // Route::match(['get','post'],'favourite_companies','favourite_companies');
         });
     });
 });

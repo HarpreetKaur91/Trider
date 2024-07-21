@@ -11,11 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('favourite_companies', function (Blueprint $table) {
+        Schema::create('business_images', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onUpdate('cascade')->onDelete('cascade');
-            $table->unsignedBigInteger('company_id');
-            $table->foreign('company_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreignId('business_profile_id')->constrained()->onUpdate('cascade')->onDelete('cascade');
+            $table->string('business_image');
             $table->timestamps();
         });
     }
@@ -25,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('favourite_companies');
+        Schema::dropIfExists('business_images');
     }
 };

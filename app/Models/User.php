@@ -52,14 +52,14 @@ class User extends Authenticatable
         return $this->hasOne('App\Models\Otp');
     }
 
-    public function provider_address()
+    public function business_address()
     {
-        return $this->hasOne('App\Models\ProviderAddress');
+        return $this->hasOne('App\Models\BusinessAddress');
     }
 
-    public function provider_business_profile()
+    public function business_profile()
     {
-        return $this->hasOne('App\Models\ProviderBusinessProfile');
+        return $this->hasOne('App\Models\BusinessProfile');
     }
 
     public function provider_availability()
@@ -67,45 +67,19 @@ class User extends Authenticatable
         return $this->hasOne('App\Models\ProviderAvailability');
     }
 
-    public function favourite_providers()
+    public function favourite_business()
     {
-        return $this->hasMany('App\Models\FavouriteProvider');
+        return $this->hasMany('App\Models\FavouriteBusiness');
     }
-
-    public function favourite_companies()
+    public function business_services()
     {
-        return $this->hasMany('App\Models\FavouriteCompany');
-    }
-    public function provider_services()
-    {
-        return $this->hasMany('App\Models\ProviderService')->with(['service' => function ($query) {
+        return $this->hasMany('App\Models\businessService')->with(['service' => function ($query) {
             $query->select('id','name','image');
         }]);
     }
 
-    public function provider_reviews()
+    public function business_reviews()
     {
-        return $this->hasMany('App\Models\ProviderReview','provider_id','id');
-    }
-
-    public function company_reviews()
-    {
-        return $this->hasMany('App\Models\CompanyReview','company_id','id');
-    }
-    public function company_address()
-    {
-        return $this->hasOne('App\Models\CompanyAddress');
-    }
-
-    public function company_profile()
-    {
-        return $this->hasOne('App\Models\CompanyProfile');
-    }
-
-    public function company_services()
-    {
-        return $this->hasMany('App\Models\CompanyService')->with(['service' => function ($query) {
-            $query->select('id','name','image');
-        }]);
+        return $this->hasMany('App\Models\businessReview','business_id','id');
     }
 }

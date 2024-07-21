@@ -4,9 +4,7 @@ namespace App\Http\Controllers\API\Provider;
 
 use Illuminate\Support\Facades\Validator;
 use App\Models\ProviderBusinessProfile;
-use Illuminate\Support\Facades\Crypt;
 use App\Models\ProviderAvailability;
-use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\Controller;
 use App\Models\FirebaseNotification;
 use App\Models\ProviderService;
@@ -14,148 +12,14 @@ use App\Models\ProviderAddress;
 use App\Models\CompanyService;
 use Illuminate\Http\Request;
 use App\Models\BankDetail;
-//use Twilio\Rest\Client;
-use App\Mail\SendOtp;
-use App\Models\Role;
 use App\Models\User;
-use App\Models\Otp;
-use Carbon\Carbon;
 use Auth;
 
 class ProviderAuthController extends Controller
 {
-    // twilio function
-    private function sendMessage($message, $recipients)
-    {
-        $account_sid = getenv("TWILIO_SID");
-        $auth_token = getenv("TWILIO_AUTH_TOKEN");
-        $twilio_number = getenv("TWILIO_NUMBER");
-        // $client = new Client($account_sid, $auth_token);
-        // $client->messages->create($recipients, ['from' => $twilio_number, 'body' => $message]);
-    }
-
-    // All Company List
-    public function getCompanyList(){
-        $companies = User::whereHas('roles',function($q){ $q->where('role_name','company'); })->whereHas('company_profile')->get();
-        if(count($companies)>0){
-            $array=[];
-            foreach($companies as $company){
-                $id = $company->id;
-                $name = $company->company_profile->company_name;
-                array_push($array,['id'=>$id,'name'=>$name]);
-            }
-            return response()->json([
-                'success' => true,
-                'message' => 'List of all companies',
-                'response' => $array
-            ]);
-        }
-        else
-        {
-            return response()->json(['sucsess'=>false,'message'=>'No Company found.']);
-        }
-    }
-    // Register
-    public function register(Request $request){
-        $validator = Validator::make($request->all(), [
-            'email' => 'required|email',
-            'password' => 'required',
-            'user_type' => 'required|in:employee,freelancer',
-            //'phone_number' => 'required|regex:/^([0-9\s\-\+\(\)]*)$/|min:10|unique:users,phone_number',
-            'device_type' => 'required|in:android,ios',
-            'firebase_token' => 'required',
-            'udid'=>'required'
-        ]);
-        if ($validator->fails()) {
-            return response()->json(['sucsess'=>false,'message'=>$validator->errors()->first()],400);
-        }
-        else{
-            try{
-                $checkEmail = User::where('email',$request->email)->whereIn('role',['employee','freelancer'])->first();
-                if(is_null($checkEmail)){
-                    $name = explode('@',$request->email);
-                    $provider = new User;
-                    $provider->name = $name[0];
-                    $provider->email = $request->email;
-                    $provider->password = \Hash::make($request->password);
-                    // $provider->phone_number  = '+91'.$request->phone_number;
-                    // $provider->phone_number_expired_at = Carbon::now()->addMinutes(30);
-                    // $provider->phone_number_code = mt_rand(1000,9999);
-                    $provider->role = $request->user_type;
-                    $provider->status = 0;
-                    if($provider->save())
-                    {
-                        //$message = "Please Verify Your Account. Your OTP is ".$provider->phone_number_code;
-
-                        //$this->sendMessage($message, $provider->phone_number);
-                        //$generate_token = $provider->createToken('OneTap_'.$provider->id)->plainTextToken;
-
-                        $role = Role::where('role_name',$request->user_type)->first();
-                        $provider->roles()->attach($role);
-
-                        FirebaseNotification::updateOrCreate(['user_id'=>$provider->id,'udid'=>$request->udid],['firebase_token'=>$request->firebase_token,'device_type'=>$request->device_type]);
-                        return response()->json([
-                            'success' => true,
-                            'user_id' => $provider->id,
-                            'name' => $provider->name,
-                        ]);
-                    }
-                    else
-                    {
-                        return response()->json(['sucsess'=>false,'message'=>'Something problem, while registration']);
-                    }
-                }
-                else{
-                    return response()->json(['sucsess'=>false,'message'=>'The email has already been taken.']);
-                }
-            }
-            catch(\Exception $e){
-                $array = ['request'=>'Provider Register API','message'=>$e->getMessage()];
-                \Log::info($array);
-                return response()->json(['sucsess'=>false,'message'=>$e->getMessage()]);
-            }
-        }
-    }
-
-    // Verify Phone Number OTP
-    public function verifyPhoneNumberOtp(Request $request)
-    {
-        $validator = Validator::make($request->all(), ['otp'=>'required|numeric','user_id'=>'required|integer']);
-        if ($validator->fails()):
-          return response()->json(['sucsess' => false,'message' => $validator->errors()->first()]);
-        endif;
-
-        try{
-            $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->find($request->user_id);
-            if(!is_null($provider)):
-              if($provider->phone_number_code == $request->otp)
-              {
-                if(Carbon::now() > $provider->phone_number_expire_at):
-                  return response()->json(['sucsess' => false,'message' => 'OTP Expired.']);
-                else:
-                    $provider->phone_number_verified_at = now();
-                    $provider->save();
-                    return response()->json(['sucsess' => true,'message' => 'OTP Matched.']);
-                endif;
-              }
-              else
-              {
-                return response()->json(['sucsess' => false,'message' => 'OTP not matched']);
-              }
-            else:
-              return response()->json(['sucsess' => false,'message' => 'User not found']);
-            endif;
-        }
-        catch(\Exception $e){
-            $array = ['request'=>'verify otp','message'=>$e->getMessage()];
-            \Log::info($array);
-            return response()->json(['sucsess'=>false,'message'=>$e->getMessage()]);
-        }
-    }
-
     // login
     public function login(Request $request){
-        $rules = ['email'=>'required|email','password'=>'required','device_type' => 'required|in:android,ios','firebase_token' => 'required','udid'=>'required'];
+        $rules = ['email'=>'required|email','password'=>'required','device_type' => 'required|in:android,ios,web','firebase_token' => 'required','udid'=>'required'];
         $validator = Validator::make($request->all(), $rules);
         if ($validator->fails())
         {
@@ -203,130 +67,6 @@ class ProviderAuthController extends Controller
                 return response()->json(['sucsess'=>false,'message'=>$e->getMessage()]);
             }
         }
-    }
-
-    // Forget Password
-    public function forgot_password(Request $request)
-    {
-        $validator = Validator::make($request->all(), ['email'=>'required|email']);
-        if ($validator->fails()):
-          return response()->json(['success' => false,'message' => $validator->errors()->first()]);
-        endif;
-
-        try{
-            $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->where('email',$request->email)->first();
-            if(!is_null($provider)):
-                $otp = Otp::whereUserId($provider->id)->first();
-                if(!is_null($otp)):
-                    $otp->expire_at = Carbon::now()->addMinutes(5);
-                    $otp->code = mt_rand(1000,9999);
-                    if($otp->save()):
-                        //Mail::to($provider->email)->send(new SendOtp($otp));
-                        return response()->json([
-                            'success' => true,
-                            'message' => 'OTP sent to your mail.',
-                            'response' => [
-                                'id' => $provider->id,
-                                'name' => $provider->name,
-                                'email' => $provider->email
-                            ]
-                        ]);
-                    else:
-                      return response()->json(['success' => false,'message' => 'Something problem when generating otp']);
-                    endif;
-                else:
-                    $otp = new Otp;
-                    $otp->user_id = $provider->id;
-                    $otp->expire_at = Carbon::now()->addMinutes(5);
-                    $otp->code = mt_rand(1000,9999);
-                    if($otp->save()):
-                        //Mail::to($provider->email)->send(new SendOtp($otp));
-                        return response()->json([
-                            'success' => true,
-                            'message' => 'OTP sent to your mail.',
-                            'response' => [
-                                'id' => $provider->id,
-                                'name' => $provider->name,
-                                'email' => $provider->email
-                            ]
-                        ]);
-                    else:
-                      return response()->json(['success' => false,'message' => 'Something problem when generating otp']);
-                    endif;
-                endif;
-            else:
-                return response()->json(['success' => false,'message' => 'Email address not found']);
-            endif;
-        }
-        catch(\Exception $e){
-            $array = ['request'=>$request->email,'message'=>$e->getMessage()];
-            \Log::info($array);
-            return response()->json(['sucsess'=>false,'message'=>$e->getMessage()]);
-        }
-
-    }
-
-    // Verify OTP
-    public function verify_otp(Request $request)
-    {
-        $validator = Validator::make($request->all(), ['otp'=>'required|numeric','user_id'=>'required|integer']);
-        if ($validator->fails()):
-          return response()->json(['sucsess' => false,'message' => $validator->errors()->first()]);
-        endif;
-
-        try{
-            $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->find($request->user_id);
-            if(!is_null($provider)):
-              $otp = Otp::whereCode($request->otp)->whereUserId($provider->id)->first();
-              if(!is_null($otp)):
-                if(Carbon::now() > $otp->expire_at):
-                  return response()->json(['sucsess' => false,'message' => 'OTP Expired.']);
-                else:
-                  return response()->json(['sucsess' => true,'message' => 'OTP Matched.']);
-                endif;
-              else:
-                return response()->json(['sucsess' => false,'message' => 'OTP not matched']);
-              endif;
-            else:
-              return response()->json(['sucsess' => false,'message' => 'User not found']);
-            endif;
-        }
-        catch(\Exception $e){
-            $array = ['request'=>'verify otp','message'=>$e->getMessage()];
-            \Log::info($array);
-            return response()->json(['sucsess'=>false,'message'=>$e->getMessage()]);
-        }
-
-    }
-
-    // Reset Password
-    public function reset_password(Request $request)
-    {
-        $validator = Validator::make($request->all(), ['user_id'=>'required|integer','password'=>'required|string|confirmed']);
-        if ($validator->fails()):
-          return response()->json(['sucsess' => false,'message' => $validator->errors()->first()]);
-        endif;
-        try{
-            $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->find($request->user_id);
-            if(!is_null($provider)):
-                $password = \Hash::make($request->password);
-                $provider->password = $password;
-                if($provider->save()):
-                    //Auth::logout();
-                  return response()->json(['sucsess' => true,'message' => 'Your password has been changed successfully.']);
-                else:
-                  return response()->json(['sucsess' => false,'message' => 'Your password has not been changed']);
-                endif;
-            else:
-              return response()->json(['sucsess' => false,'message' => "User not found"]);
-            endif;
-        }
-        catch(\Exception $e){
-            $array = ['request'=>'reset password api','message'=>$e->getMessage()];
-            \Log::info($array);
-            return response()->json(['sucsess'=>false,'message'=>$e->getMessage()]);
-        }
-
     }
 
     // Change Password
@@ -497,7 +237,6 @@ class ProviderAuthController extends Controller
 
                 else{
                     try{
-
                         if(($request->user_type == "employee") && ($request->has('company_id'))){
                             $company = User::whereHas('roles',function($q){ $q->where('role_name','company'); })->find($request->company_id);
                             if(is_null($company)){
@@ -517,13 +256,13 @@ class ProviderAuthController extends Controller
                             $businessProfile->company_id = $request->company_id;
                         }
                         if($request->hasFile('front_aadhaar_card') &&  $request->hasFile('back_aadhaar_card')){
-                            if((!is_null($provider->front_aadhaar_card)) && \Storage::exists($provider->front_aadhaar_card) && (!is_null($provider->back_aadhaar_card)) && \Storage::exists($provider->back_aadhaar_card))
+                            if((!is_null($businessProfile->front_aadhaar_card)) && \Storage::exists($businessProfile->front_aadhaar_card) && (!is_null($businessProfile->back_aadhaar_card)) && \Storage::exists($businessProfile->back_aadhaar_card))
                             {
-                                \Storage::delete($provider->front_aadhaar_card);
-                                \Storage::delete($provider->back_aadhaar_card);
+                                \Storage::delete($businessProfile->front_aadhaar_card);
+                                \Storage::delete($businessProfile->back_aadhaar_card);
                             }
-                            $provider->front_aadhaar_card = $request->file('front_aadhaar_card')->store('public/provider/providerBusinessProfile');
-                            $provider->back_aadhaar_card = $request->file('back_aadhaar_card')->store('public/provider/providerBusinessProfile');
+                            $businessProfile->front_aadhaar_card = $request->file('front_aadhaar_card')->store('public/provider/providerBusinessProfile');
+                            $businessProfile->back_aadhaar_card = $request->file('back_aadhaar_card')->store('public/provider/providerBusinessProfile');
                         }
 
                         if($request->hasFile('business_image')){

@@ -13,6 +13,28 @@ use App\Models\Faq;
 
 class CommonAPIController extends Controller
 {
+    // All Company List
+    public function getCompanyList(){
+        $companies = User::whereHas('roles',function($q){ $q->where('role_name','company'); })->whereHas('company_profile')->get();
+        if(count($companies)>0){
+            $array=[];
+            foreach($companies as $company){
+                $id = $company->id;
+                $name = $company->company_profile->company_name;
+                array_push($array,['id'=>$id,'name'=>$name]);
+            }
+            return response()->json([
+                'success' => true,
+                'message' => 'List of all companies',
+                'response' => $array
+            ]);
+        }
+        else
+        {
+            return response()->json(['sucsess'=>false,'message'=>'No Company found.']);
+        }
+    }
+
     // Get all services
     public function services(Request $request)
     {

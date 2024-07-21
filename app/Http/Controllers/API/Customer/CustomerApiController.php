@@ -3,28 +3,24 @@
 namespace App\Http\Controllers\API\Customer;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Controllers\Controller;
-use App\Models\FavouriteProvider;
-use App\Models\FavouriteCompany;
-use App\Models\ProviderService;
-use App\Models\ProviderReview;
-use App\Models\CompanyService;
-use App\Models\CompanyReview;
+use App\Models\FavouriteBusiness;
+use App\Models\BusinessReview;
 use Illuminate\Http\Request;
 use App\Models\User;
 
 class CustomerApiController extends Controller
 {
-    // Add Favourite Provider
-    public function favourite_providers(Request $request)
+    // Add Favourite Business
+    public function favourite_business(Request $request)
     {
         try{
             if($request->isMethod('get'))
             {
-                $favourite_providers = FavouriteProvider::where('user_id',$request->user()->id)->get();
-                if(count($favourite_providers)>0){
-                    foreach($favourite_providers as $provider){
-                        $services = ProviderService::where('user_id',$provider->provider_id)->count();
-                        $provider->name = $provider->provider->name;
+                $favourite_business = FavouriteBusiness::where('user_id',$request->user()->id)->get();
+                if(count($favourite_business)>0){
+                    foreach($favourite_business as $business){
+                        $services = BusinessService::where('user_id',$business->business_id)->count();
+                        $business->name = $business->business->name;
                         if(!is_null($provider->provider->image)){
                             $url = \Storage::url($provider->provider->image);
                             $provider->image =  asset($url);

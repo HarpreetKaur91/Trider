@@ -11,13 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('provider_reviews', function (Blueprint $table) {
+        Schema::create('business_services', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onUpdate('cascade')->onDelete('cascade');
-            $table->unsignedBigInteger('provider_id');
-            $table->foreign('provider_id')->references('id')->on('users')->onDelete('cascade');
-            $table->decimal('rating',8,2)->default(0);
-            $table->text('comment')->nullable();
+            $table->foreignId('business_profile_id')->constrained()->onUpdate('cascade')->onDelete('cascade');
+            $table->foreignId('service_id')->constrained()->onUpdate('cascade')->onDelete('cascade');
             $table->boolean('status')->default(0);
             $table->timestamps();
         });
@@ -28,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('provider_reviews');
+        Schema::dropIfExists('business_services');
     }
 };
