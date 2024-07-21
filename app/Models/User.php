@@ -78,7 +78,7 @@ class User extends Authenticatable
     }
     public function business_services()
     {
-        return $this->hasMany('App\Models\businessService')->with(['service' => function ($query) {
+        return $this->hasMany('App\Models\BusinessService')->with(['service' => function ($query) {
             $query->select('id','name','image');
         }]);
     }
