@@ -152,8 +152,8 @@ class ProviderAuthController extends Controller
                     $provider->business_profile->back_aadhaar_card =  asset($url);
                 }
 
-                if(count($company->business_images)>0){
-                    foreach($company->business_images as $image){
+                if(count($provider->business_images)>0){
+                    foreach($provider->business_images as $image){
                         if(!is_null($image->business_image)){
                             $url = \Storage::url($image->business_image);
                             $image->business_image =  asset($url);
