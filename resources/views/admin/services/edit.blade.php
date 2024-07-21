@@ -33,6 +33,10 @@
                 <label for="description">Description(optional)</label>
                 <input type="text" class="form-control" id="description" name="description" placeholder="Enter Description" value="{{old('description',$service->description)}}">
               </div>
+              <div class="form-group">
+                <label for="description">Instruction</label>
+                <input type="text" class="form-control" id="instruction" name="instruction" placeholder="Enter Instruction" value="{{old('instruction',$service->instruction)}}">
+              </div>
                 <div class="row">
                     @foreach($service->service_prices as $value)
                         <div class="form-group col-md-6">

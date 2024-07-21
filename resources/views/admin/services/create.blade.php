@@ -30,6 +30,10 @@
                 <label for="description">Description(optional)</label>
                 <input type="text" class="form-control" id="description" name="description" placeholder="Enter Description" value="{{old('description')}}">
               </div>
+              div class="form-group">
+                <label for="instruction">Instruction</label>
+                <input type="text" class="form-control" id="instruction" name="instruction" placeholder="Enter Instruction" value="{{old('instruction')}}">
+              </div>
               {{--  <div class="form-group">
                 <label for="shift">Select Shift<span class="text-danger">*</span></label>
                 <select name="shift" class="form-control" required>
