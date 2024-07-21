@@ -131,7 +131,7 @@ class ProviderAuthController extends Controller
     {
         try{
             $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })
-            ->with(['provider_business_profile','provider_availability','provider_services','provider_address'])
+            ->with(['business_profile','business_images','business_services','business_address'])
             ->select('id','email','name','phone_number','image')->find($request->user()->id);
             if(!is_null($provider)){
                 if(!is_null($provider['image'])){
@@ -141,10 +141,10 @@ class ProviderAuthController extends Controller
                 else{
                     $provider['image'] = asset('empty.jpg');
                 }
-                $provider->total_rating = number_format($provider->provider_reviews->avg('rating'),2);
-                $provider->total_review = $provider->provider_reviews->count();
-                $provider->total_services = $provider->provider_services->count();
-                $provider->makeHidden('provider_reviews');
+                $provider->total_rating = number_format($provider->business_reviews->avg('rating'),2);
+                $provider->total_review = $provider->business_reviews->count();
+                $provider->total_services = $provider->business_services->count();
+                $provider->makeHidden('business_reviews');
                 return response()->json(['sucsess'=>true,'message'=>'Your Profile','response'=>$provider]);
             }
             else{
