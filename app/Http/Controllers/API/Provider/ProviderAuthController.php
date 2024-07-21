@@ -164,6 +164,18 @@ class ProviderAuthController extends Controller
                     }
                 }
 
+                if(count($provider->business_services)>0){
+                    foreach($provider->business_services as $service){
+                        if(!is_null($service->service->image)){
+                            $url = \Storage::url($service->service->image);
+                            $service->service->image =  asset($url);
+                        }
+                        else{
+                            $service->service->image = asset('empty.jpg');
+                        }
+                    }
+                }
+
                 $provider->total_rating = number_format($provider->business_reviews->avg('rating'),2);
                 $provider->total_review = $provider->business_reviews->count();
                 $provider->total_services = $provider->business_services->count();
