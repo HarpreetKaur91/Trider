@@ -124,7 +124,10 @@ class CompanyAuthController extends Controller
     public function company_profile(Request $request)
     {
         try{
-            $company = User::with(['business_profile','business_images','business_services','business_address'])->whereHas('roles',function($q){ $q->where('role_name','company'); })->find($request->user()->id);
+            $company = User::with(['business_profile','business_images','business_services','business_address'])
+            ->whereHas('roles',function($q){ $q->where('role_name','company'); })
+            ->select('id','email','name','phone_number','image')
+            ->find($request->user()->id);
             if(!is_null($company)){
                 if(!is_null($company['image'])){
                     $url = \Storage::url($company['image']);
@@ -147,6 +150,7 @@ class CompanyAuthController extends Controller
                 $company->total_rating = number_format($company->business_reviews->avg('rating'),2);
                 $company->total_review = $company->business_reviews->count();
                 $company->total_service = $company->business_services->count();
+                $company->makeHidden(['business_reviews']);
                 return response()->json(['sucsess'=>true,'message'=>'Your Profile','response'=>$company]);
             }
             else{

@@ -10,6 +10,7 @@ class BusinessAddress extends Model
     use HasFactory;
 
     protected $fillable = ['user_id','business_profile_id','address_line_one','address_line_two','city','state','pincode','latitude','longitude'];
+    protected $hidden = ['created_at','updated_at'];
 
     public function provider(){
         return $this->belongsTo('App\Models\User','user_id','id');

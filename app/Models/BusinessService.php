@@ -10,6 +10,8 @@ class BusinessService extends Model
     use HasFactory;
 
     protected $fillable = ['user_id','business_profile_id','service_id'];
+    protected $hidden = ['status','created_at','updated_at'];
+
 
     public function service()
     {
