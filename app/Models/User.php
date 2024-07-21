@@ -64,7 +64,7 @@ class User extends Authenticatable
 
     public function business_images()
     {
-        return $this->hasOne('App\Models\BusinessImage');
+        return $this->hasMany('App\Models\BusinessImage');
     }
 
     public function provider_availability()
