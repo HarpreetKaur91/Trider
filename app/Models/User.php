@@ -85,6 +85,6 @@ class User extends Authenticatable
 
     public function business_reviews()
     {
-        return $this->hasMany('App\Models\businessReview','business_id','id');
+        return $this->hasMany('App\Models\BusinessReview','business_id','id');
     }
 }
