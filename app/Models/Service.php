@@ -9,7 +9,7 @@ class Service extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['parent_id','name','logo','description','status'];
+    protected $fillable = ['parent_id','name','image','description','instruction','status'];
     protected $hidden = ['created_at','updated_at'];
     public function parent()
     {

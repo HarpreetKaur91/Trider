@@ -147,6 +147,17 @@ class CompanyAuthController extends Controller
                         }
                     }
                 }
+                if(count($company->business_images)>0){
+                    foreach($company->business_images as $image){
+                        if(!is_null($image->business_image)){
+                            $url = \Storage::url($image->business_image);
+                            $image->business_image =  asset($url);
+                        }
+                        else{
+                            $image->business_image = asset('empty.jpg');
+                        }
+                    }
+                }
                 $company->total_rating = number_format($company->business_reviews->avg('rating'),2);
                 $company->total_review = $company->business_reviews->count();
                 $company->total_service = $company->business_services->count();

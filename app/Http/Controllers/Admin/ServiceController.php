@@ -41,6 +41,7 @@ class ServiceController extends Controller
         }
         $service->position = 1;
         $service->description = $request->description;
+        $service->instruction = $request->instruction;
         $service->status = $request->status;
         if($service->save()){
             if(count($request->shift)>0){
@@ -107,6 +108,7 @@ class ServiceController extends Controller
         }
         $service->position = 1;
         $service->description = $request->description;
+        $service->instruction = $request->instruction;
         $service->status = $request->status;
         if($service->save()){
             if(count($request->shift)>0){

@@ -16,6 +16,7 @@ return new class extends Migration
             $table->integer('parent_id')->default(0);
             $table->char('name')->index();
             $table->longText('description')->nullable();
+            $table->longText('instruction')->nullable();
             $table->string('image')->nullable();
             $table->integer('position')->default(1);
             $table->boolean('status')->default(0);
