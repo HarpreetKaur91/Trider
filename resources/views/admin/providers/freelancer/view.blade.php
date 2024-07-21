@@ -83,13 +83,13 @@
                                             <p><span>Address Line Two</span>: {{$provider->business_address->address_line_two ?? "--"}}</p>
                                         </div>
                                         <div class="bio-row text-capitalize">
-                                            <p><span>State</span>: {{$provider->provider_address->state ?? "--"}}</p>
+                                            <p><span>State</span>: {{$provider->business_address->state ?? "--"}}</p>
                                         </div>
                                         <div class="bio-row text-capitalize">
-                                            <p><span>City</span>: {{$provider->provider_address->city ?? "--"}}</p>
+                                            <p><span>City</span>: {{$provider->business_address->city ?? "--"}}</p>
                                         </div>
                                         <div class="bio-row">
-                                            <p><span>Pincode</span>: {{$provider->provider_address->pincode ?? "--"}}</p>
+                                            <p><span>Pincode</span>: {{$provider->business_address->pincode ?? "--"}}</p>
                                         </div>
                                         <div class="bio-row">
                                             <p><span>Front Aadhar Card </span>: {{$provider->business_profile->front_aadhaar_card ?? "--"}}</p>
