@@ -31,7 +31,7 @@
                                 </div>
                                 <ul class="nav flex-column">
                                     <li class="nav-item"><a class="nav-link" href="#">
-                                        @php $rate = $provider->provider_reviews->avg('rating'); @endphp
+                                        @php $rate = $provider->business_reviews->avg('rating'); @endphp
                                         @if($rate)
                                             @for($i=1;$i<=$rate;$i++)
                                                 <i class='bi bi-star-fill text-warning'></i>
@@ -40,7 +40,7 @@
                                             <i class='bi bi-star'></i><i class='bi bi-star'></i><i class='bi bi-star'></i><i class='bi bi-star'></i><i class='bi bi-star'></i>
                                         @endif
                                     </a></li>
-                                    <li class="nav-item"><a class="nav-link" href="#">Total Review :- {{$provider->provider_reviews->count() }}</a></li>
+                                    <li class="nav-item"><a class="nav-link" href="#">Total Review :- {{$provider->business_reviews->count() }}</a></li>
                                     <li class="nav-item"><a class="nav-link" href="#"><button type="button" class="btn btn-info btn-sm" id="providerApproved" title="Approve" data-url="{{route('verifyProviderStatus',[$provider->id,1])}}"><i class="bi bi-bag-check-fill"></i></button>&nbsp;&nbsp;&nbsp;<button type="button" class="btn btn-danger btn-sm" id="providerDeclined" title="Reject" data-url="{{route('verifyProviderStatus',[$provider->id,0])}}"><i class="bi bi-bag-x-fill"></i></button></a></li>
                                 </ul>
                                 <!-- <div class="text-center mt-3">
@@ -64,29 +64,29 @@
                                         <div class="bio-row">
                                             <p><span>Phone Number</span>: {{$provider->phone_number ?? "--"}}</p>
                                         </div>
-                                        <div class="bio-row">
-                                            <p><span>Business Logo </span>:
-                                                @if(!is_null($provider->provider_business_profile) && !is_null($provider->provider_business_profile->business_image))
-                                                <a class="link-primary link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover" target="_blank" href="{{asset($provider->provider_business_profile->business_image)}}">View Logo</a>
-                                                @else
-                                                N/A
-                                                @endif
-                                            </p>
-                                        </div>
                                         <div class="bio-row text-capitalize">
-                                            <p><span>Business Name </span>: {{$provider->provider_business_profile->business_name ?? "--"}}</p>
+                                            <p><span>Business Name </span>: {{$provider->business_profile->business_name ?? "--"}}</p>
                                         </div>
                                         <div class="bio-row">
-                                            <p><span>Business Phone No </span>: {{$provider->provider_business_profile->business_phone_no ?? "--"}}</p>
+                                            <p><span>Business Phone No </span>: {{$provider->business_profile->business_phone_no ?? "--"}}</p>
                                         </div>
                                         <div class="bio-row">
-                                            <p><span>Year of experience </span>: {{$provider->provider_business_profile->year_of_exp ?? "--"}}</p>
+                                            <p><span>Year of experience </span>: {{$provider->business_profile->year_of_exp ?? "--"}}</p>
+                                        </div>
+                                        <div class="bio-row">
+                                            <p><span>Bio </span>: {{$provider->business_profile->bio ?? "--"}}</p>
+                                        </div>
+                                        <div class="bio-row">
+                                            <p><span>Pan Card Number </span>: {{$provider->business_profile->pan_card_number ?? "--"}}</p>
+                                        </div>
+                                        <div class="bio-row">
+                                            <p><span>GST Number </span>: {{$provider->business_profile->gst_number ?? "--"}}</p>
                                         </div>
                                         <div class="bio-row text-capitalize">
-                                            <p><span>Complete Address</span>: {{$provider->provider_address->complete_address ?? "--"}}</p>
+                                            <p><span>Address Line One</span>: {{$provider->business_address->address_line_one ?? "--"}}</p>
                                         </div>
                                         <div class="bio-row text-capitalize">
-                                            <p><span>Landmark</span>: {{$provider->provider_address->landmark ?? "--"}}</p>
+                                            <p><span>Address Line Two</span>: {{$provider->business_address->address_line_two ?? "--"}}</p>
                                         </div>
                                         <div class="bio-row text-capitalize">
                                             <p><span>State</span>: {{$provider->provider_address->state ?? "--"}}</p>
@@ -98,10 +98,10 @@
                                             <p><span>Pincode</span>: {{$provider->provider_address->pincode ?? "--"}}</p>
                                         </div>
                                         <div class="bio-row">
-                                            <p><span>Front Aadhar Card </span>: {{$provider->provider_business_profile->front_aadhaar_card ?? "--"}}</p>
+                                            <p><span>Front Aadhar Card </span>: {{$provider->business_profile->front_aadhaar_card ?? "--"}}</p>
                                         </div>
                                         <div class="bio-row">
-                                            <p><span>Back Aadhar Card </span>: {{$provider->provider_business_profile->back_aadhaar_card ?? "--"}}</p>
+                                            <p><span>Back Aadhar Card </span>: {{$provider->business_profile->back_aadhaar_card ?? "--"}}</p>
                                         </div>
                                         <div class="bio-row">
                                             <p><span>Joined At</span>: {{date('M d,Y',strtotime($provider->created_at))}}</p>
@@ -141,8 +141,8 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @if(count($provider->provider_services)>0)
-                                @foreach($provider->provider_services as $service)
+                                @if(count($provider->business_services)>0)
+                                @foreach($provider->business_services as $service)
                                 <tr>
                                     <td> {{$loop->iteration}} </td>
                                     <td> {{$service->service->name}} </td>

@@ -3,13 +3,8 @@
 namespace App\Http\Controllers\API\Provider;
 
 use Illuminate\Support\Facades\Validator;
-use App\Models\ProviderBusinessProfile;
-use App\Models\ProviderAvailability;
 use App\Http\Controllers\Controller;
 use App\Models\FirebaseNotification;
-use App\Models\ProviderService;
-use App\Models\ProviderAddress;
-use App\Models\CompanyService;
 use Illuminate\Http\Request;
 use App\Models\BankDetail;
 use App\Models\User;
