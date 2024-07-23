@@ -29,7 +29,7 @@ class ReviewDataTable extends DataTable
             ->addColumn('user',function($row){
                 return $row->user->name;
             })
-            ->addColumn('provider',function($row){
+            ->addColumn('business',function($row){
                 return $row->provider->name;
             })
             ->addColumn('rating',function($row){
@@ -94,7 +94,7 @@ class ReviewDataTable extends DataTable
            Column::make('id'),
             Column::computed('service'),
             Column::computed('user'),
-            Column::computed('provider'),
+            Column::computed('business'),
             Column::computed('rating')->exportable(false)->printable(false),
             Column::make('created_at'),
             Column::computed('action')

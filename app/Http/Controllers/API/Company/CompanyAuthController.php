@@ -40,7 +40,8 @@ class CompanyAuthController extends Controller
                             'response' => [
                                 'id' => $company->id,
                                 'name' => $company->name,
-                                'email' => $company->email
+                                'email' => $company->email,
+                                'user_type' => $company->role,
                             ]
                         ]);
                     else:
@@ -227,6 +228,52 @@ class CompanyAuthController extends Controller
         }
         catch(\Exception $e){
             $array = ['request'=>'company edit profile','message'=>$e->getMessage()];
+            \Log::info($array);
+            return response()->json(['sucsess'=>false,'message'=>$e->getMessage()]);
+        }
+    }
+
+    // Accept OR Reject Provider Account
+    public function acceptOrRejectProviderAccount(Request $request)
+    {
+        try{
+            $company = User::whereHas('roles',function($q){ $q->where('role_name','company'); })->find($request->user()->id);
+            if(!is_null($company)){
+                $validator = Validator::make($request->all(), [
+                    'employee_id' => 'required|exists:users,id',
+                    'account_status' => 'required|boolean'
+                ]);
+
+                if ($validator->fails()) {
+                    return response()->json(['sucsess'=>false,'message'=>$validator->errors()->first()],400);
+                }
+                else{
+                    $employee = User::whereHas('roles',function($q){ $q->where('role_name','employee'); })->where('company_id',$company->id)->find($request->employee_id);
+                    if(!is_null($employee)){
+                        $employee->account_status = $request->account_status;
+                        if($employee->save())
+                        {
+                            return response()->json([
+                                'success' => true,
+                                'message' => 'Employee profile has been updated.',
+                            ]);
+                        }
+                        else
+                        {
+                            return response()->json(['sucsess'=>false,'message'=>'Something problem, while updation']);
+                        }
+                    }
+                    else{
+                        return response()->json(['sucsess'=>false,'message'=>'Employee not found.']);
+                    }
+                }
+            }
+            else{
+                return response()->json(['sucsess'=>false,'message'=>'User not found.']);
+            }
+        }
+        catch(\Exception $e){
+            $array = ['request'=>'accept or reject provider account','message'=>$e->getMessage()];
             \Log::info($array);
             return response()->json(['sucsess'=>false,'message'=>$e->getMessage()]);
         }

@@ -129,14 +129,13 @@
                         <table class="table table-bordered profile_table">
                             <thead>
                                 <tr>
-                                    <th colspan="5" class="text-center">Provider Service's</th>
+                                    <th colspan="5" class="text-center">Employee Service's</th>
                                 </tr>
                             </thead>
                             <thead>
                                 <tr>
                                     <th> # </th>
                                     <th> Service </th>
-                                    <th> Bio </th>
                                     <th> Created At </th>
                                 </tr>
                             </thead>
@@ -146,7 +145,6 @@
                                 <tr>
                                     <td> {{$loop->iteration}} </td>
                                     <td> {{$service->service->name}} </td>
-                                    <td> {{$service->bio}} </td>
                                     <td> {{date('M Y,d',strtotime($service->created_at))}} </td>
                                 </tr>
                                 @endforeach

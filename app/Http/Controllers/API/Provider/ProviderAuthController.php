@@ -41,7 +41,8 @@ class ProviderAuthController extends Controller
                             'response' => [
                                 'id' => $provider->id,
                                 'name' => $provider->name,
-                                'email' => $provider->email
+                                'email' => $provider->email,
+                                'user_type' => $provider->role
                             ]
                         ]);
                     else:

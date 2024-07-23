@@ -1,8 +1,8 @@
 <x-app-layout>
-    
-    <x-slot name="header"> 
+
+    <x-slot name="header">
         <h3 class="page-title">
-            <span class="page-title-icon bg-gradient-primary text-white me-2"><i class="bi bi-eye-fill"></i> </span> 
+            <span class="page-title-icon bg-gradient-primary text-white me-2"><i class="bi bi-eye-fill"></i> </span>
             {{ __('View Review') }}
         </h3>
         <x-slot name="breadcrumb">
@@ -15,7 +15,7 @@
               </nav>
         </x-slot>
     </x-slot>
-    
+
     <div class="row">
         <div class="col-lg-12 grid-margin stretch-card">
             <div class="card">
@@ -28,9 +28,9 @@
                         <i class='bi bi-star-fill text-warning'></i>
                     @endfor
                 </h5>
-                <h6 class="card-subtitle mb-2 text-muted">Service :- {{$review->category->name}}</h6>
+                <h6 class="card-subtitle mb-2 text-muted">Service :- {{$review->service->name}}</h6>
                 <h6 class="card-subtitle mb-2 text-muted">User :- {{$review->user->name}}</h6>
-                <h6 class="card-subtitle mb-2 text-muted">Provider :- {{$review->provider->name}}</h6>
+                <h6 class="card-subtitle mb-2 text-muted">Business :- {{$review->business->name}}</h6>
                 <h6 class="card-subtitle mb-2 text-muted">Created At :- {{date('M d,Y',strtotime($review->created_at))}}</h6>
                 <p class="card-text">Comment :- {{$review->comment}}</p>
               </div>

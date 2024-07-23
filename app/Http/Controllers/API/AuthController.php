@@ -310,6 +310,9 @@ class AuthController extends Controller
                     if(($request->user_type == "employee") && ($request->has('company_id'))){
                         $businessProfile->company_id = $request->company_id;
                     }
+                    if(($request->user_type == "company")){
+                        $businessProfile->company_unique_id = 'TR'.$user->id;
+                    }
                     if($request->hasFile('front_aadhaar_card') &&  $request->hasFile('back_aadhaar_card')){
                         if((!is_null($businessProfile->front_aadhaar_card)) && \Storage::exists($businessProfile->front_aadhaar_card) && (!is_null($businessProfile->back_aadhaar_card)) && \Storage::exists($businessProfile->back_aadhaar_card))
                         {
@@ -375,11 +378,17 @@ class AuthController extends Controller
                                 endif;
                             endif;
                         }
-
+                        if(($request->user_type == "company")){
+                            $data = array('company_id'=>$businessProfile->company_unique_id);
+                        }
+                        else{
+                            $data = null;
+                        }
                         return response()->json([
                             'success' => true,
                             'message' => 'Your business profile has been added.',
-                    ]);
+                            'data' => $data
+                        ]);
                     }
                     else{
                         return response()->json(['sucsess'=>false,'message'=>'Something problem, while add your business profile']);

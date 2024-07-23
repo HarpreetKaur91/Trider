@@ -9,7 +9,7 @@
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="{{route('dashboard')}}">Dashboard</a></li>
-                  <li class="breadcrumb-item"><a href="{{route('freelancer')}}">Freelancer</a></li>
+                  <li class="breadcrumb-item"><a href="{{route('freelancer')}}">Freelancers</a></li>
                   <li class="breadcrumb-item active text-capitalize" aria-current="page">{{ __($provider->name.' Profile') }}</li>
                 </ol>
               </nav>
@@ -123,14 +123,13 @@
                         <table class="table table-bordered profile_table">
                             <thead>
                                 <tr>
-                                    <th colspan="5" class="text-center">Provider Service's</th>
+                                    <th colspan="5" class="text-center">Freelancer Service's</th>
                                 </tr>
                             </thead>
                             <thead>
                                 <tr>
                                     <th> # </th>
                                     <th> Service </th>
-                                    <th> Bio </th>
                                     <th> Created At </th>
                                 </tr>
                             </thead>
@@ -140,7 +139,6 @@
                                 <tr>
                                     <td> {{$loop->iteration}} </td>
                                     <td> {{$service->service->name}} </td>
-                                    <td> {{$service->bio}} </td>
                                     <td> {{date('M Y,d',strtotime($service->created_at))}} </td>
                                 </tr>
                                 @endforeach

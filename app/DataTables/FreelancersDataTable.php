@@ -79,7 +79,6 @@ class FreelancersDataTable extends DataTable
             Column::make('id'),
             Column::make('name'),
             Column::make('email'),
-            Column::make('account_status'),
             Column::make('created_at'),
             Column::computed('action')
                   ->exportable(false)
