@@ -128,10 +128,10 @@ class ProviderAuthController extends Controller
         try{
             $provider = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })
             ->with(['business_profile','business_images','business_services','business_address'])
-            ->select('id','email','name','phone_number','image')->find($request->user()->id);
+            ->select('id','email','name','phone_number','image','role')->find($request->user()->id);
 
             if(!is_null($provider)){
-
+                $provider['user_type'] = $provider->role;
                 if(!is_null($provider['image'])){
                     $url = \Storage::url($provider['image']);
                     $provider['image'] =  asset($url);
@@ -175,7 +175,7 @@ class ProviderAuthController extends Controller
                 $provider->total_rating = number_format($provider->business_reviews->avg('rating'),2);
                 $provider->total_review = $provider->business_reviews->count();
                 $provider->total_services = $provider->business_services->count();
-                $provider->makeHidden('business_reviews');
+                $provider->makeHidden('business_reviews','role');
 
                 return response()->json(['sucsess'=>true,'message'=>'Your Profile','response'=>$provider]);
             }
@@ -222,7 +222,7 @@ class ProviderAuthController extends Controller
                             return response()->json([
                                 'success' => true,
                                 'message' => 'Your profile has been updated.',
-                        ]);
+                            ]);
                         }
                         else
                         {

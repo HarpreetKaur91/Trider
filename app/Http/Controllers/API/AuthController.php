@@ -265,7 +265,7 @@ class AuthController extends Controller
                 'business_phone_no' => 'required|unique:business_profiles,business_phone_no',
                 'year_of_exp' => 'required',
                 'user_type' => 'required|in:employee,freelancer,company',
-                'company_id' => 'required_if:user_type,==,employee|exists:users,id',
+                'company_id' => 'required_if:user_type,==,employee|exists:business_profiles,company_unique_id',
                 'front_aadhaar_card' => 'required_if:user_type,==,freelancer',
                 'back_aadhaar_card' => 'required_if:user_type,==,freelancer',
                 'pan_card_number' => 'required_if:user_type,==,company',
@@ -290,7 +290,7 @@ class AuthController extends Controller
                     }
 
                     if(($request->user_type == "employee") && ($request->has('company_id'))){
-                        $company = User::whereHas('roles',function($q){ $q->where('role_name','company'); })->find($request->company_id);
+                        $company = BusinessProfile::where('company_unique_id',$request->company_id)->first();
                         if(is_null($company)){
                             return response()->json(['sucsess'=>false,'message'=>'Company not exists.'],400);
                         }
