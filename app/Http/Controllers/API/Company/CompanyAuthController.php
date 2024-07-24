@@ -127,9 +127,10 @@ class CompanyAuthController extends Controller
         try{
             $company = User::with(['business_profile','business_images','business_services','business_address'])
             ->whereHas('roles',function($q){ $q->where('role_name','company'); })
-            ->select('id','email','name','phone_number','image')
+            ->select('id','email','name','phone_number','image','role')
             ->find($request->user()->id);
             if(!is_null($company)){
+                $company['user_type'] = $company->role;
                 if(!is_null($company['image'])){
                     $url = \Storage::url($company['image']);
                     $company['image'] =  asset($url);
@@ -162,7 +163,7 @@ class CompanyAuthController extends Controller
                 $company->total_rating = number_format($company->business_reviews->avg('rating'),2);
                 $company->total_review = $company->business_reviews->count();
                 $company->total_service = $company->business_services->count();
-                $company->makeHidden(['business_reviews']);
+                $company->makeHidden(['business_reviews','role']);
                 return response()->json(['sucsess'=>true,'message'=>'Your Profile','response'=>$company]);
             }
             else{
