@@ -70,7 +70,8 @@ Route::group(['prefix'=>'company'],function()
             Route::post('edit-profile','edit_profile');
             Route::post('changePassword','change_password');
             Route::get('company-profile','company_profile');
-            Route::post('acceptOrRejectProviderAccount','acceptOrRejectProviderAccount');
+            Route::post('acceptOrRejectEmployeeAccount','acceptOrRejectEmployeeAccount');
+            Route::get('getEmployeeList','getEmployeeList');
         });
     });
 });

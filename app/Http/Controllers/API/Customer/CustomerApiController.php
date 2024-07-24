@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API\Customer;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Controllers\Controller;
 use App\Models\FavouriteBusiness;
+use App\Models\BusinessProfile;
 use App\Models\BusinessReview;
 use Illuminate\Http\Request;
 use App\Models\User;
@@ -32,6 +33,10 @@ class CustomerApiController extends Controller
                         $business->total_rating = number_format($business->business->business_reviews->avg('rating'),2);
                         $business->total_review = $business->business->business_reviews->count();
                         $business->total_service = $business->business->business_services->count();
+                        if($business->business->role == "company"){
+                            $total_employees = BusinessProfile::where('company_id',$business->user_id)->count();
+                            $business->total_employees = $total_employees;
+                        }
                     }
                     $favourite_business->makeHidden(['user_id','business_id','business','created_at','updated_at']);
                     return response()->json(['success'=>true,'message'=>'Business List','response'=>$favourite_business]);
@@ -129,6 +134,10 @@ class CustomerApiController extends Controller
                     $business->total_rating = number_format($business->business_reviews->avg('rating'),2);
                     $business->total_review = $business->business_reviews->count();
                     $business->total_service = count($business->business_services);
+                    if($business->role == "company"){
+                        $total_employees = BusinessProfile::where('company_id',$business->user_id)->count();
+                        $business->total_employees = $total_employees;
+                    }
                     $business->name = $business->business_profile->business_name;
                     if(count($business->business_images)> 0){
                         $image = $business->business_images[0]['business_image'];
@@ -174,6 +183,10 @@ class CustomerApiController extends Controller
                         $service->service_name = $service->service->name;
                     endforeach;
                 endif;
+                if($business->role == "company"){
+                    $total_employees = BusinessProfile::where('company_id',$business->user_id)->count();
+                    $business->total_employees = $total_employees;
+                }
                 $isFavouriteBusiness = FavouriteBusiness::where('user_id',$request->user()->id)->where('business_id',$business->id)->first();
                 $data = array();
                 $data['id'] = $business->id;
@@ -183,6 +196,9 @@ class CustomerApiController extends Controller
                 $data['total_rating'] = number_format($business->business_reviews->avg('rating'),2);
                 $data['total_reviews'] = $business->business_reviews->count();
                 $data['tatal_services'] = count($business->business_services);
+                if($business->role == "company"){
+                    $data['total_employees'] = $business->total_employees;
+                }
                 $data['services'] = $business->business_services;
                 $data['address'] = $business->business_address;
                 $business->business_services->makeHidden(['service','status','bio','created_at','updated_at']);

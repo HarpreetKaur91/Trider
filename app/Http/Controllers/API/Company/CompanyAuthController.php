@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API\Company;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Controllers\Controller;
 use App\Models\FirebaseNotification;
+use App\Models\BusinessProfile;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Auth;
@@ -234,8 +235,8 @@ class CompanyAuthController extends Controller
         }
     }
 
-    // Accept OR Reject Provider Account
-    public function acceptOrRejectProviderAccount(Request $request)
+    // Accept OR Reject Employee Account
+    public function acceptOrRejectEmployeeAccount(Request $request)
     {
         try{
             $company = User::whereHas('roles',function($q){ $q->where('role_name','company'); })->find($request->user()->id);
@@ -252,6 +253,7 @@ class CompanyAuthController extends Controller
                     $employee = User::whereHas('roles',function($q){ $q->where('role_name','employee'); })->where('company_id',$company->id)->find($request->employee_id);
                     if(!is_null($employee)){
                         $employee->account_status = $request->account_status;
+                        //$employee->business_profile->status = 1;
                         if($employee->save())
                         {
                             return response()->json([
@@ -275,6 +277,51 @@ class CompanyAuthController extends Controller
         }
         catch(\Exception $e){
             $array = ['request'=>'accept or reject provider account','message'=>$e->getMessage()];
+            \Log::info($array);
+            return response()->json(['sucsess'=>false,'message'=>$e->getMessage()]);
+        }
+    }
+
+    // Get Employee Lists
+    public function getEmployeeList(Request $request){
+        try{
+            $company = User::whereHas('roles',function($q){ $q->where('role_name','company'); })->find($request->user()->id);
+            if(!is_null($company)){
+                $employees = User::whereHas('roles',function($q){ $q->where('role_name','employee'); })
+                    ->whereHas('business_profile',function($compID) use($company) { $compID->where('company_id',$company->id); })
+                    ->withCount(['business_reviews as total_rating' => function($query){ $query->select(\DB::raw('coalesce(avg(rating),0)'));  }])->orderByDesc('total_rating')
+                    ->where('account_status',1)->orderBy('id','desc')->paginate(25);
+                if(count($employees)>0){
+                    foreach($employees as $employee){
+                        $employee->user_type = $employee->role;
+                        $employee->total_rating = number_format($employee->business_reviews->avg('rating'),2);
+                        $employee->total_review = $employee->business_reviews->count();
+                        $employee->total_service = count($employee->business_services);
+                        $employee->name = $employee->business_profile->business_name;
+                        if(count($employee->business_images)> 0){
+                            $image = $employee->business_images[0]['business_image'];
+                            $url = \Storage::url($image);
+                            $employee->image =  asset($url);
+                        }
+                        else{
+                            $employee->image = asset('empty.jpg');
+                        }
+                    }
+                    $employees->makeHidden(['role','email','business_images','business_profile','created_at','updated_at','report_status','account_status','status','email_verified_at','phone_number_code','phone_number_expired_at','business_reviews','business_services','phone_number','provider_address','created_at','updated_at']);
+                    $paginator = array("current_page"=>$employees->currentPage(),"total"=>$employees->total(),"per_page"=>$employees->perPage(),"next_page_url"=>(string)$employees->nextPageUrl(),"prev_page_url"=>(string)$employees->previousPageUrl(),"last_page_url"=>(string)$employees->url($employees->lastPage()),"last_page"=>$employees->lastPage(),"from"=>$employees->firstItem(),"to"=>$employees->lastItem());
+                    $response = array('data'=>$employees->items(),"paginator"=>$paginator);
+                    return response()->json(['success'=>true,'message'=>'Business Lists','response'=>$response]);
+                }
+                else{
+                    return response()->json(['sucsess'=>false,'message'=>'Employees not found.']);
+                }
+            }
+            else{
+                return response()->json(['sucsess'=>false,'message'=>'User not found.']);
+            }
+        }
+        catch(\Exception $e){
+            $array = ['request'=>'get employee lists','message'=>$e->getMessage()];
             \Log::info($array);
             return response()->json(['sucsess'=>false,'message'=>$e->getMessage()]);
         }
