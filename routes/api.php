@@ -98,15 +98,11 @@ Route::group(['prefix'=>'customer'],function()
         });
 
         Route::controller(CustomerApiController::class)->group(function(){
-            // Route::get('providers','providers');
-            // Route::get('companies','companies');
-            // Route::post('providerReviews','providerReviews');
-            // Route::post('companyReviews','companyReviews');
-            // Route::get('provider/{providerId}','getProviderProfile');
-            // Route::get('provider-review/{providerId}','getProviderReview');
-            // Route::get('company-review/{companyId}','getCompanyReview');
-            // Route::match(['get','post'],'favourite_providers','favourite_providers');
-            // Route::match(['get','post'],'favourite_companies','favourite_companies');
+            Route::get('businesses','businesses');
+            Route::post('businessReviews','businessReviews');
+            Route::get('businesses/{businessId}','getBusinessProfile');
+            Route::get('business-review/{businessId}','getBusinessReview');
+            Route::match(['get','post'],'favourite_business','favourite_business');
         });
     });
 });

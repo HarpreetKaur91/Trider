@@ -40,7 +40,8 @@ class CustomerAuthController extends Controller
                             'response' => [
                                 'id' => $user->id,
                                 'name' => $user->name,
-                                'email' => $user->email
+                                'email' => $user->email,
+                                'user_type' => $user->role
                             ]
                         ]);
                     else:
@@ -124,8 +125,9 @@ class CustomerAuthController extends Controller
     public function user_profile(Request $request)
     {
         try{
-            $user = User::whereHas('roles',function($q){ $q->where('role_name','user'); })->select('id','email','name','phone_number','image')->find($request->user()->id);
+            $user = User::whereHas('roles',function($q){ $q->where('role_name','user'); })->select('id','email','name','phone_number','image','role')->find($request->user()->id);
             if(!is_null($user)){
+                $user->user_type = $user->role;
                 if(!is_null($user['image'])){
                     $url = \Storage::url($user['image']);
                     $user['image'] =  asset($url);
@@ -133,6 +135,7 @@ class CustomerAuthController extends Controller
                 else{
                     $user['image'] = asset('empty.jpg');
                 }
+                $user->makeHidden(['role']);
                 return response()->json(['sucsess'=>true,'message'=>'Your Profile','response'=>$user]);
             }
             else{

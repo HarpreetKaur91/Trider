@@ -35,7 +35,7 @@ class AuthController extends Controller
         $validator = Validator::make($request->all(), [
             'email' => 'required|email',
             'password' => 'required',
-            'user_type' => 'required|in:employee,freelancer,company',
+            'user_type' => 'required|in:employee,freelancer,company,user',
             'phone_number' => 'regex:/^([0-9\s\-\+\(\)]*)$/|min:10|unique:users,phone_number',
             'device_type' => 'required|in:android,ios,web',
             'firebase_token' => 'required',
