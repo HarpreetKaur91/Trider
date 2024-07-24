@@ -308,7 +308,7 @@ class AuthController extends Controller
                     $businessProfile->year_of_exp = $request->year_of_exp;
                     $businessProfile->bio = $request->bio;
                     if(($request->user_type == "employee") && ($request->has('company_id'))){
-                        $businessProfile->company_id = $request->company_id;
+                        $businessProfile->company_id = $company->user_id;
                     }
                     if(($request->user_type == "company")){
                         $businessProfile->company_unique_id = 'TR'.$user->id;

@@ -144,12 +144,12 @@ class ProviderAuthController extends Controller
                     if(!is_null($provider->business_profile->front_aadhaar_card) && (!is_null($provider->business_profile->back_aadhaar_card))){
                         $url = \Storage::url($provider->business_profile->front_aadhaar_card);
                         $provider->business_profile->front_aadhaar_card =  asset($url);
-    
+
                         $url = \Storage::url($provider->business_profile->back_aadhaar_card);
                         $provider->business_profile->back_aadhaar_card =  asset($url);
                     }
                 }
-                
+
                 if(count($provider->business_images)>0){
                     foreach($provider->business_images as $image){
                         if(!is_null($image->business_image)){
