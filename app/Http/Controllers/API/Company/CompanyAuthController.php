@@ -255,9 +255,9 @@ class CompanyAuthController extends Controller
                     ->find($request->employee_id);
                     if(!is_null($employee)){
                         $employee->account_status = $request->account_status;
-                        $employee->business_profile->status = 1;
                         if($employee->save())
                         {
+                            $employee->business_profile()->update(['status' => 1]);
                             return response()->json([
                                 'success' => true,
                                 'message' => 'Employee profile has been updated.',
