@@ -250,10 +250,12 @@ class CompanyAuthController extends Controller
                     return response()->json(['sucsess'=>false,'message'=>$validator->errors()->first()],400);
                 }
                 else{
-                    $employee = User::whereHas('roles',function($q){ $q->where('role_name','employee'); })->where('company_id',$company->id)->find($request->employee_id);
+                    $employee = User::whereHas('roles',function($q){ $q->where('role_name','employee'); })
+                    ->whereHas('business_profile',function($compID) use($company) { $compID->where('company_id',$company->id); })
+                    ->find($request->employee_id);
                     if(!is_null($employee)){
                         $employee->account_status = $request->account_status;
-                        //$employee->business_profile->status = 1;
+                        $employee->business_profile->status = 1;
                         if($employee->save())
                         {
                             return response()->json([
