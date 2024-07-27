@@ -118,7 +118,7 @@ class CommonAPIController extends Controller
                 if(!is_null($page)){
                     $page->content = strip_tags($page->content);
                 }
-                return response()->json(['success'=>true,'message'=>'About Us Content.','response'=>$page]);
+                return response()->json(['success'=>true,'message'=>'About Us Content.','data'=>$page]);
             }
             else{
                 return response()->json(['success'=>false,'message'=>'User not found.']);

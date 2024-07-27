@@ -333,7 +333,7 @@ class CompanyAuthController extends Controller
     // get Booking Lists
     public function getBookingLists(Request $request){
         try{
-            $user = User::whereHas('roles',function($q){ $q->where('role_name','user'); })->find($request->user()->id);
+            $user = User::whereHas('roles',function($q){ $q->where('role_name','company'); })->find($request->user()->id);
             if(!is_null($user)):
                 if($request->filled('param')):
                     if($request->param == "new"):
