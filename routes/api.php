@@ -6,8 +6,15 @@ use App\Http\Controllers\API\Provider\ProviderAuthController;
 use App\Http\Controllers\API\Customer\CustomerAuthController;
 use App\Http\Controllers\API\Customer\CustomerApiController;
 use App\Http\Controllers\API\Company\CompanyAuthController;
+use App\Http\Controllers\API\Booking\BookingController;
 use App\Http\Controllers\API\CommonAPIController;
 use App\Http\Controllers\API\AuthController;
+
+Route::controller(BookingController::class)->group(function(){
+    Route::middleware('auth:sanctum')->group(function(){
+        Route::post('booking','booking');
+    });
+});
 
 Route::controller(CommonAPIController::class)->group(function(){
     Route::get('services','services');
@@ -45,6 +52,7 @@ Route::group(['prefix'=>'provider'],function()
             Route::get('provider-profile','provider_profile');
 
             Route::match(['get','post'],'bank-detail','bank_detail');
+            Route::get('getBookingLists','getBookingLists');
         });
     });
 });
@@ -72,6 +80,7 @@ Route::group(['prefix'=>'company'],function()
             Route::get('company-profile','company_profile');
             Route::post('acceptOrRejectEmployeeAccount','acceptOrRejectEmployeeAccount');
             Route::get('getEmployeeList','getEmployeeList');
+            Route::get('getBookingLists','getBookingLists');
         });
     });
 });
@@ -100,6 +109,7 @@ Route::group(['prefix'=>'customer'],function()
 
         Route::controller(CustomerApiController::class)->group(function(){
             Route::get('businesses','businesses');
+            Route::get('getBookingLists','getBookingLists');
             Route::post('businessReviews','businessReviews');
             Route::get('businesses/{businessId}','getBusinessProfile');
             Route::get('business-review/{businessId}','getBusinessReview');

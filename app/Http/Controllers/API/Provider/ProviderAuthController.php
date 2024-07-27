@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\FirebaseNotification;
 use Illuminate\Http\Request;
 use App\Models\BankDetail;
+use App\Models\Booking;
 use App\Models\User;
 use Auth;
 
@@ -302,6 +303,76 @@ class ProviderAuthController extends Controller
             $array = ['request'=>'provider bank detail','message'=>$e->getMessage()];
             \Log::info($array);
             return response()->json(['sucsess'=>false,'message'=>$e->getMessage()]);
+        }
+    }
+
+    // get Booking Lists
+    public function getBookingLists(Request $request){
+        try{
+            $user = User::whereHas('roles',function($q){ $q->whereIn('role_name',['freelancer','employee']); })->find($request->user()->id);
+            if(!is_null($user)):
+                if($request->filled('param')):
+                    if($request->param == "new"):
+                        $bookings = Booking::with(['booking_services','business'])->where('user_id',$user->id)->where('booking_status','new')
+                        ->get();
+                    endif;
+                    if($request->param == "in_progress"):
+                        $bookings = Booking::with(['booking_services','business'])->where('user_id',$user->id)->where('booking_status','in_progress')->get();
+                    endif;
+                    if($request->param == "completed"):
+                        $bookings = Booking::with(['booking_services','business'])->where('user_id',$user->id)->where('booking_status','completed')->get();
+                    endif;
+                    if(count($bookings)>0):
+                        foreach($bookings as $booking):
+                            if(count($booking->business->business_images)> 0){
+                                $image = $booking->business->business_images[0]['business_image'];
+                                $url = \Storage::url($image);
+                                $booking->business_image =  asset($url);
+                            }
+                            else{
+                                $booking->business_image = asset('empty.jpg');
+                            }
+                            $booking->business_name = $booking->business->name;
+                            $booking->business_rating = number_format($booking->business->business_review->avg('rating'),2);
+                            if(!is_null($booking->user->image)){
+                                $image = $booking->user->image;
+                                $url = \Storage::url($image);
+                                $booking->user_image =  asset($url);
+                            }
+                            else{
+                                $booking->user_image = asset('empty.jpg');
+                            }
+                            $booking->user_name = $booking->user->name;
+                            if(count($booking->booking_services)):
+                                foreach($booking->booking_services as $service):
+                                    $service->service_name = $service->service->name;
+                                    if(!is_null($service->service->image)){
+                                        $image = $service->service->image;
+                                        $url = \Storage::url($image);
+                                        $service->service_image =  asset($url);
+                                    }
+                                    else{
+                                        $service->service_image = asset('empty.jpg');
+                                    }
+                                endforeach;
+                                $booking->booking_services->makeHidden(['service']);
+                            endif;
+                        endforeach;
+                        $bookings->makeHidden(['business','user']);
+
+                        return response()->json(['success'=>true,'message'=>'Booking Lists','response'=>$bookings]);
+                    else:
+                        return response()->json(['success'=>false,'message'=>'Booking not found']);
+                    endif;
+                endif;
+            else:
+                return response()->json(['success'=>false,'message'=>'User not found']);
+            endif;
+        }
+        catch(\Exception $e){
+            $array = ['request'=>'get business list api','message'=>$e->getMessage()];
+            \Log::info($array);
+            return response()->json(['success'=>false,'message'=>$e->getMessage()]);
         }
     }
 }

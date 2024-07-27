@@ -7,6 +7,7 @@ use App\Models\FavouriteBusiness;
 use App\Models\BusinessProfile;
 use App\Models\BusinessReview;
 use Illuminate\Http\Request;
+use App\Models\Booking;
 use App\Models\User;
 
 class CustomerApiController extends Controller
@@ -107,15 +108,16 @@ class CustomerApiController extends Controller
                 endif;
                 if($request->param == "employee"):
                     $businesses = User::with('business_address')->whereHas('roles',function($q){ $q->where('role_name','employee'); })
-                    ->withCount(['business_reviews as total_rating' => function($query)
-                    {
-                        $query->select(\DB::raw('coalesce(avg(rating),0)'));
-                    }])->orderByDesc('total_rating')
+                    ->withCount(['business_reviews as total_rating' => function($query){ $query->select(\DB::raw('coalesce(avg(rating),0)')); }])->orderByDesc('total_rating')
                     ->paginate(25);
                 endif;
                 if($request->param == "search"):
                     $search = $request->search_value;
-                    $businesses = User::with('business_address')->whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer']); })->where('name','LIKE',"%{$search}%")->orderBy('id','desc')->select('id')->paginate(25);
+                    $role_type = $request->user_type;
+                    $businesses = User::with('business_address')
+                    ->whereHas('roles',function($role) use($role_type) { $role->where('role_name',$role_type); })
+                    ->whereHas('business_profile',function($query) use($search) {($query->where('name','LIKE',"%{$search}%"));})
+                    ->orderBy('id','desc')->select('id')->paginate(25);
                 endif;
             endif;
             if(!isset($request->param)):
@@ -135,7 +137,7 @@ class CustomerApiController extends Controller
                     $business->total_review = $business->business_reviews->count();
                     $business->total_service = count($business->business_services);
                     if($business->role == "company"){
-                        $total_employees = BusinessProfile::where('company_id',$business->user_id)->count();
+                        $total_employees = BusinessProfile::where('company_id',$business->user_id)->where('status',1)->count();
                         $business->total_employees = $total_employees;
                     }
                     $business->name = $business->business_profile->business_name;
@@ -167,45 +169,49 @@ class CustomerApiController extends Controller
     public function getBusinessProfile(Request $request,$businessId)
     {
         try{
-            $userId = $request->user()->id;
-            $business = User::with(['business_services','business_reviews'])->whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer','company']); })->find($businessId);
-            if(!is_null($business)){
-                if(count($business->business_images)> 0){
-                    $image = $business->business_images[0]['business_image'];
-                    $url = \Storage::url($image);
-                    $business->image =  asset($url);
+            $user = User::whereHas('roles',function($q){ $q->where('role_name','user'); })->find($request->user()->id);
+            if(!is_null($user))
+            {
+                $business = User::with(['business_services','business_reviews'])->whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer','company']); })->find($businessId);
+                if(!is_null($business)){
+                    if(count($business->business_images)> 0){
+                        $image = $business->business_images[0]['business_image'];
+                        $url = \Storage::url($image);
+                        $business->image =  asset($url);
+                    }
+                    else{
+                        $business->image = asset('empty.jpg');
+                    }
+                    if(count($business->business_services)):
+                        foreach($business->business_services as $service):
+                            $service->service_name = $service->service->name;
+                        endforeach;
+                    endif;
+                    $isFavouriteBusiness = FavouriteBusiness::where('user_id',$request->user()->id)->where('business_id',$business->id)->first();
+                    $data = array();
+                    $data['id'] = $business->id;
+                    $data['name'] = $business->business_profile->business_name;
+                    $data['image'] = $business->image;
+                    $data['is_favourite'] = (!is_null($isFavouriteBusiness)) ? 1 : 0;
+                    $data['total_rating'] = number_format($business->business_reviews->avg('rating'),2);
+                    $data['total_reviews'] = $business->business_reviews->count();
+                    $data['tatal_services'] = count($business->business_services);
+                    if($business->role == "company"){
+                        $total_employees = BusinessProfile::where('company_id',$business->user_id)->where('status',1)->count();
+                        $data['total_employees'] = $total_employees;
+                    }
+                    $data['services'] = $business->business_services;
+                    $data['address'] = $business->business_address;
+                    $business->business_services->makeHidden(['service','status','bio','created_at','updated_at']);
+                    return response()->json(['success'=>true,'message'=>'Business Detail','response'=>$data]);
                 }
                 else{
-                    $business->image = asset('empty.jpg');
+                    return response()->json(['success'=>false,'message'=>'Business not found.']);
                 }
-                if(count($business->business_services)):
-                    foreach($business->business_services as $service):
-                        $service->service_name = $service->service->name;
-                    endforeach;
-                endif;
-                if($business->role == "company"){
-                    $total_employees = BusinessProfile::where('company_id',$business->user_id)->count();
-                    $business->total_employees = $total_employees;
-                }
-                $isFavouriteBusiness = FavouriteBusiness::where('user_id',$request->user()->id)->where('business_id',$business->id)->first();
-                $data = array();
-                $data['id'] = $business->id;
-                $data['name'] = $business->business_profile->business_name;
-                $data['image'] = $business->image;
-                $data['is_favourite'] = (!is_null($isFavouriteBusiness)) ? 1 : 0;
-                $data['total_rating'] = number_format($business->business_reviews->avg('rating'),2);
-                $data['total_reviews'] = $business->business_reviews->count();
-                $data['tatal_services'] = count($business->business_services);
-                if($business->role == "company"){
-                    $data['total_employees'] = $business->total_employees;
-                }
-                $data['services'] = $business->business_services;
-                $data['address'] = $business->business_address;
-                $business->business_services->makeHidden(['service','status','bio','created_at','updated_at']);
-                return response()->json(['success'=>true,'message'=>'Business Detail','response'=>$data]);
             }
-            else{
-                return response()->json(['success'=>false,'message'=>'Business not found.']);
+            else
+            {
+                return response()->json(['success'=>false,'message'=>'User not found']);
             }
         }
         catch(\Exception $e){
@@ -220,31 +226,38 @@ class CustomerApiController extends Controller
     {
         try
         {
-            $userId = $request->user()->id;
-            $business = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer','company']); })->find($businessId);
-            if(!is_null($business)){
-                $reviews = BusinessReview::where('business_id',$business->id)->get();
-                if(count($reviews)>0){
-                    foreach($reviews as $review){
-                        if(!is_null($review->user->image)){
-                            $url = \Storage::url($review->user->image);
-                            $review->user_image =  asset($url);
+            $user = User::whereHas('roles',function($q){ $q->where('role_name','user'); })->find($request->user()->id);
+            if(!is_null($user))
+            {
+                $business = User::whereHas('roles',function($q){ $q->whereIn('role_name',['employee','freelancer','company']); })->find($businessId);
+                if(!is_null($business)){
+                    $reviews = BusinessReview::where('business_id',$business->id)->get();
+                    if(count($reviews)>0){
+                        foreach($reviews as $review){
+                            if(!is_null($review->user->image)){
+                                $url = \Storage::url($review->user->image);
+                                $review->user_image =  asset($url);
+                            }
+                            else{
+                                $review->user_image = asset('empty.jpg');
+                            }
+                            $review->user_name  = $review->user->name;
+                            $review->review_date_time = $review->created_at->diffForHumans();
                         }
-                        else{
-                            $review->user_image = asset('empty.jpg');
-                        }
-                        $review->user_name  = $review->user->name;
-                        $review->review_date_time = $review->created_at->diffForHumans();
+                        $review->makeHidden(['status','user','created_at','updated_at']);
+                        return response()->json(['success'=>true,'message'=>'Business Review','response'=>$reviews]);
                     }
-                    $review->makeHidden(['status','user','created_at','updated_at']);
-                    return response()->json(['success'=>true,'message'=>'Business Review','response'=>$reviews]);
+                    else{
+                        return response()->json(['success'=>false,'message'=>'No Review']);
+                    }
                 }
                 else{
-                    return response()->json(['success'=>false,'message'=>'No Review']);
+                    return response()->json(['success'=>false,'message'=>'Business not found.']);
                 }
             }
-            else{
-                return response()->json(['success'=>false,'message'=>'Business not found.']);
+            else
+            {
+                return response()->json(['success'=>false,'message'=>'User not found']);
             }
         }
         catch(\Exception $e){
@@ -289,6 +302,76 @@ class CustomerApiController extends Controller
         }
         catch(\Exception $e){
             $array = ['request'=>'add business review api','message'=>$e->getMessage()];
+            \Log::info($array);
+            return response()->json(['success'=>false,'message'=>$e->getMessage()]);
+        }
+    }
+
+    // get Booking Lists
+    public function getBookingLists(Request $request){
+        try{
+            $user = User::whereHas('roles',function($q){ $q->where('role_name','user'); })->find($request->user()->id);
+            if(!is_null($user)):
+                if($request->filled('param')):
+                    if($request->param == "new"):
+                        $bookings = Booking::with(['booking_services','business'])->where('user_id',$user->id)->where('booking_status','new')
+                        ->get();
+                    endif;
+                    if($request->param == "in_progress"):
+                        $bookings = Booking::with(['booking_services','business'])->where('user_id',$user->id)->where('booking_status','in_progress')->get();
+                    endif;
+                    if($request->param == "completed"):
+                        $bookings = Booking::with(['booking_services','business'])->where('user_id',$user->id)->where('booking_status','completed')->get();
+                    endif;
+                    if(count($bookings)>0):
+                        foreach($bookings as $booking):
+                            if(count($booking->business->business_images)> 0){
+                                $image = $booking->business->business_images[0]['business_image'];
+                                $url = \Storage::url($image);
+                                $booking->business_image =  asset($url);
+                            }
+                            else{
+                                $booking->business_image = asset('empty.jpg');
+                            }
+                            $booking->business_name = $booking->business->name;
+                            $booking->business_rating = number_format($booking->business->business_review->avg('rating'),2);
+                            if(!is_null($booking->user->image)){
+                                $image = $booking->user->image;
+                                $url = \Storage::url($image);
+                                $booking->user_image =  asset($url);
+                            }
+                            else{
+                                $booking->user_image = asset('empty.jpg');
+                            }
+                            $booking->user_name = $booking->user->name;
+                            if(count($booking->booking_services)):
+                                foreach($booking->booking_services as $service):
+                                    $service->service_name = $service->service->name;
+                                    if(!is_null($service->service->image)){
+                                        $image = $service->service->image;
+                                        $url = \Storage::url($image);
+                                        $service->service_image =  asset($url);
+                                    }
+                                    else{
+                                        $service->service_image = asset('empty.jpg');
+                                    }
+                                endforeach;
+                                $booking->booking_services->makeHidden(['service']);
+                            endif;
+                        endforeach;
+                        $bookings->makeHidden(['business','user']);
+
+                        return response()->json(['success'=>true,'message'=>'Booking Lists','response'=>$bookings]);
+                    else:
+                        return response()->json(['success'=>false,'message'=>'Booking not found']);
+                    endif;
+                endif;
+            else:
+                return response()->json(['success'=>false,'message'=>'User not found']);
+            endif;
+        }
+        catch(\Exception $e){
+            $array = ['request'=>'get business list api','message'=>$e->getMessage()];
             \Log::info($array);
             return response()->json(['success'=>false,'message'=>$e->getMessage()]);
         }

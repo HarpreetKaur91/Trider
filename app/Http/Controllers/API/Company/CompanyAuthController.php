@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\FirebaseNotification;
 use App\Models\BusinessProfile;
 use Illuminate\Http\Request;
+use App\Models\Booking;
 use App\Models\User;
 use Auth;
 
@@ -291,8 +292,8 @@ class CompanyAuthController extends Controller
             if(!is_null($company)){
                 $employees = User::whereHas('roles',function($q){ $q->where('role_name','employee'); })
                     ->whereHas('business_profile',function($compID) use($company) { $compID->where('company_id',$company->id); })
-                    ->withCount(['business_reviews as total_rating' => function($query){ $query->select(\DB::raw('coalesce(avg(rating),0)'));  }])->orderByDesc('total_rating')
-                    ->where('account_status',1)->orderBy('id','desc')->paginate(25);
+                    ->withCount(['business_reviews as total_rating' => function($query){ $query->select(\DB::raw('coalesce(avg(rating),0)'));  }])
+                    ->where('account_status',1)->orderByDesc('total_rating')->paginate(25);
                 if(count($employees)>0){
                     foreach($employees as $employee){
                         $employee->user_type = $employee->role;
@@ -326,6 +327,76 @@ class CompanyAuthController extends Controller
             $array = ['request'=>'get employee lists','message'=>$e->getMessage()];
             \Log::info($array);
             return response()->json(['sucsess'=>false,'message'=>$e->getMessage()]);
+        }
+    }
+
+    // get Booking Lists
+    public function getBookingLists(Request $request){
+        try{
+            $user = User::whereHas('roles',function($q){ $q->where('role_name','user'); })->find($request->user()->id);
+            if(!is_null($user)):
+                if($request->filled('param')):
+                    if($request->param == "new"):
+                        $bookings = Booking::with(['booking_services','business'])->where('user_id',$user->id)->where('booking_status','new')
+                        ->get();
+                    endif;
+                    if($request->param == "in_progress"):
+                        $bookings = Booking::with(['booking_services','business'])->where('user_id',$user->id)->where('booking_status','in_progress')->get();
+                    endif;
+                    if($request->param == "completed"):
+                        $bookings = Booking::with(['booking_services','business'])->where('user_id',$user->id)->where('booking_status','completed')->get();
+                    endif;
+                    if(count($bookings)>0):
+                        foreach($bookings as $booking):
+                            if(count($booking->business->business_images)> 0){
+                                $image = $booking->business->business_images[0]['business_image'];
+                                $url = \Storage::url($image);
+                                $booking->business_image =  asset($url);
+                            }
+                            else{
+                                $booking->business_image = asset('empty.jpg');
+                            }
+                            $booking->business_name = $booking->business->name;
+                            $booking->business_rating = number_format($booking->business->business_review->avg('rating'),2);
+                            if(!is_null($booking->user->image)){
+                                $image = $booking->user->image;
+                                $url = \Storage::url($image);
+                                $booking->user_image =  asset($url);
+                            }
+                            else{
+                                $booking->user_image = asset('empty.jpg');
+                            }
+                            $booking->user_name = $booking->user->name;
+                            if(count($booking->booking_services)):
+                                foreach($booking->booking_services as $service):
+                                    $service->service_name = $service->service->name;
+                                    if(!is_null($service->service->image)){
+                                        $image = $service->service->image;
+                                        $url = \Storage::url($image);
+                                        $service->service_image =  asset($url);
+                                    }
+                                    else{
+                                        $service->service_image = asset('empty.jpg');
+                                    }
+                                endforeach;
+                                $booking->booking_services->makeHidden(['service']);
+                            endif;
+                        endforeach;
+                        $bookings->makeHidden(['business','user']);
+
+                        return response()->json(['success'=>true,'message'=>'Booking Lists','response'=>$bookings]);
+                    else:
+                        return response()->json(['success'=>false,'message'=>'Booking not found']);
+                    endif;
+                endif;
+            else:
+                return response()->json(['success'=>false,'message'=>'User not found']);
+            endif;
+        }
+        catch(\Exception $e){
+            $array = ['request'=>'get business list api','message'=>$e->getMessage()];
+            \Log::info($array);
+            return response()->json(['success'=>false,'message'=>$e->getMessage()]);
         }
     }
 }
